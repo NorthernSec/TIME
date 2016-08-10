@@ -1,0 +1,12 @@
+# File types
+*~
+
+# Folders
+TIME/plugins/
+
+# Files
+.gitignore
+
+# Exclusions of ignore
+!TIME/plugins/readme.md
+
