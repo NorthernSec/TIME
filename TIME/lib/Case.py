@@ -1,4 +1,6 @@
+
 from datetime import datetime
+from uuid import uuid4
 
 from TIME.lib.PluginManager import PluginManager as pm
 
@@ -25,14 +27,19 @@ class Case():
   def add_original_intel(self, intel, intel_type):
     if not any(n.uid==intel and n.plugin=="Original" and
                n.intel_type==intel_type for n in self.nodes):
-      self.nodes.append(Node(intel, "Original", intel_type, "Original", intel, 0))
+      self.nodes.append(Node(str(uuid4()), "Original", intel_type, "Original", intel, 0))
       return True
     return False
 
   def add_intel(self, node, edge):
-    if not any(n.uid==node.uid and n.intel_type==node.intel_type
-               for n in self.nodes):
+    if not any(n.label==node.label and n.intel_type==node.intel_type and
+               n.info ==node.info  for n in self.nodes):
       self.nodes.append(node)
+    else:
+      matching = next((n for n in self.nodes if n.label==node.label and
+                                                n.intel_type==node.intel_type and
+                                                n.info==node.info), None)
+      edge.target = matching.uid
     if not any(e.target==edge.target and e.source==edge.source and
                e.label ==edge.label for e in self.edges):
       self.edges.append(edge)
