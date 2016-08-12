@@ -25,7 +25,14 @@ class Configuration():
 
   INTEL_IP     = "intel_ip"
   INTEL_DOMAIN = "intel_domain"
+  INTEL_ASN    = "intel_asn"
+  INTEL_URL    = "intel_url"
+  INTEL_EMAIL  = "intel_email"
+  INTEL_SHA256 = "intel_sha256"
+  INTEL_MD5    = "intel_md5"
   INTEL_TEXT   = "intel_text"
+
+  NODE_ORIGINAL = "Original"
 
   @classmethod
   def readSetting(cls, section, item, default):

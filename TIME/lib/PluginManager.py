@@ -10,8 +10,12 @@
 # Imports
 import os
 import importlib
+import sys
+import traceback
 
 from TIME.lib.Config import Configuration as conf
+import TIME.lib.DatabaseConnection as db
+import TIME.lib.Toolkit as TK
 
 class PluginManager():
   def __init__(self):
@@ -25,6 +29,7 @@ class PluginManager():
     # Read and parse plugin file
     data = open(conf.getPluginsettings(), "r").read()
     data = [x.split(maxsplit=3) for x in data.splitlines() if not x.startswith("#") and x]
+    db.add_plugin_info(conf.NODE_ORIGINAL, "#666677")
     for x in [x for x in data if len(x) in [2, 3]]:
       try:
         x.extend(['']*(3-len(x))) # add empty args if none exist
@@ -37,6 +42,8 @@ class PluginManager():
         plugin = getattr(i, pluginName.split("/")[-1])(**args)
         # Add to plugins
         self.plugins[pluginName] = plugin
+        color = TK.generate_unique_color([x["color"] for x in self.get_all_plugins()])
+        db.add_plugin_info(pluginName, color)
         print("[+] Plugin loaded: %s"%x[0])
       except Exception as e:
         print("[!] Failed to load plugin: %s: "%x[0])
@@ -47,17 +54,23 @@ class PluginManager():
     for key in self.plugins.keys():
       try:
         new_intel = self.plugins[key].get_related_intel(orig_intel, intel_type)
-        intel.extend([(key,)+x for x in new_intel])
+        if new_intel:
+          intel.extend([(key,)+x for x in new_intel])
       except Exception as e:
         print("[!] Failed to gather intel: %s: "%key)
         print("[!]  -> %s"%e)
+        traceback.print_exc()
     # intel is a list of tuples of format (plugin, label, relation, intel type, info)
     return intel
 
   @classmethod
   def get_default_node_size(self, plugin):
-    return 30
+    return db.get_plugins(plugin)["size"]
 
   @classmethod
   def get_default_node_color(self, plugin):
-    return "#FFEE55"
+    return db.get_plugins(plugin)["color"]
+
+  @classmethod
+  def get_all_plugins(self):
+    return db.get_plugins()

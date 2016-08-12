@@ -30,12 +30,3 @@ class CaseManager():
         # If the recursion depth is not reached, continue
         if node.recurse_depth < case.recurse:
           work_queue.put(node)
-    
-    
-    
-    
-    # Load case and manage the threat intel gathering, like in Ostrica.py.
-    # CaseManager should be called by a flask function, so think about how
-    #  to implement it. 
-    
-
