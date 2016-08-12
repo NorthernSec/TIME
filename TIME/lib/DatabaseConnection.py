@@ -1,3 +1,15 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Database layer
+#   Currently written for sqlite3, and only for keeping colors
+#
+# Software is free software released under the "Original BSD license"
+#
+# Copyright (c) 2016 	Pieter-Jan Moreels
+# Copyright (c) 2016  NorthernSec
+
+# Imports
 import sqlite3
 
 path = ":memory:"

@@ -1,4 +1,18 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Case, Node, Edge
+#   Encompasses the main objects for the relations:
+#    - Case: A threat intel case, with documentation, nodes and edges
+#    - Node: A piece of intel
+#    - Edge: A relationship between two nodes
+#
+# Software is free software released under the "Original BSD license"
+#
+# Copyright (c) 2016 	Pieter-Jan Moreels
+# Copyright (c) 2016  NorthernSec
 
+# Imports
 from datetime import datetime
 from uuid import uuid4
 

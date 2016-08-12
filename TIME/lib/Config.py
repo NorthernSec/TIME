@@ -3,11 +3,12 @@
 #
 # Config reader to read the configuration file
 #
-# Software is free software released under the "Modified BSD license"
+# Software is free software released under the "Original BSD license"
 #
-# Copyright (c) 2016 	Pieter-Jan Moreels - pieterjan.moreels@gmail.com
+# Copyright (c) 2016 	Pieter-Jan Moreels
+# Copyright (c) 2016  NorthernSec
 
-# imports
+# Imports
 import sys
 import os
 runPath = os.path.dirname(os.path.realpath(__file__))

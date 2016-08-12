@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 #
 # Plugin manager
+#   Loads the plug-ins and handles the interaction with them
 #
-# Software is free software released under the "Modified BSD license"
+# Software is free software released under the "Original BSD license"
 #
-# Copyright (c) 2016 	Pieter-Jan Moreels - pieterjan.moreels@gmail.com
+# Copyright (c) 2016 	Pieter-Jan Moreels
+# Copyright (c) 2016  NorthernSec
 
 # Imports
 import os

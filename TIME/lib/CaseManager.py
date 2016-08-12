@@ -1,3 +1,15 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Case Manager
+#   Manages cases and the intelligence gathering for cases
+#
+# Software is free software released under the "Original BSD license"
+#
+# Copyright (c) 2016 	Pieter-Jan Moreels
+# Copyright (c) 2016  NorthernSec
+
+# Imports
 import queue
 from uuid import uuid4
 
