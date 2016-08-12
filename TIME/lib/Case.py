@@ -41,9 +41,9 @@ class Case():
                                                 n.intel_type==node.intel_type and
                                                 n.info==node.info), None)
       edge.target = matching.uid
-    if not any(e.target==edge.target and e.source==edge.source and
-               e.label ==edge.label for e in self.edges):
-      self.edges.append(edge)
+    if not any(e.target==edge.target and e.source==edge.source for e in self.edges):
+      if not any(e.target==edge.source and e.source==edge.target for e in self.edges):
+        self.edges.append(edge)
 
 
 class Node():
