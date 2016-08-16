@@ -15,6 +15,13 @@ import sqlite3
 path = ":memory:"
 db=sqlite3.connect(path)
 
+def _dbWrapped(funct):
+    def wrapper(*args, **kwargs):
+      ensureDB()
+      result = funct(*args, **kwargs)
+      return result
+    return wrapper
+
 def ensureDB():
   db.execute('''CREATE TABLE IF NOT EXISTS Plugins
                 (Plugin  Text     PRIMARY KEY,
@@ -25,6 +32,7 @@ def ensureDB():
 # Store data #
 ##############
 # Plugins
+@_dbWrapped
 def add_plugin_info(plugin, color, size = 30):
   db.execute("""INSERT OR REPLACE INTO Plugins(Plugin, Color, Size)
                 VALUES(?, ?, ?)""", (plugin, color, size))
@@ -41,6 +49,7 @@ def get_plugins(plugin=None):
     return p[0] if len(p) is 1 else None
   else: return p
 
+@_dbWrapped
 def selectAllFrom(table, where=None):
   curs=db.cursor()
   wh="where "+" and ".join(where) if where else ""
