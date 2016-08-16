@@ -126,6 +126,7 @@
         height: 100%;
         float: left;
         padding: 10px;
+        overflow-y: scroll;
       }
       #content{
         height:100%;
@@ -175,9 +176,16 @@
             .selector('.faded')
             .css({'opacity':      0.25,
                   'text-opacity': 0}),
-          elements:{nodes: [{% for n in case.nodes %}{data: {id: "{{n.uid}}", name: "{{n.label}}", size: {{n.size}}, color: "{{n.color}}", label: "{{n.name}}"}},{% endfor %}],
-                    edges: [{% for e in case.edges %}{data: {source: "{{e.source}}", target: "{{e.target}}", label: "{{e.label}}"}, classes: "autorotate"},{% endfor %}]}
+          elements:{nodes: [{% for n in case.nodes %}{data: {id: "{{n.uid}}", name: "{{n.label}}", size: {{n.size}}, color: "{{n.color}}", label: "{{n.name}}", info: `{{n.info|safe}}`}},{% endfor %}],
+                    edges: [{% for e in case.edges %}{data: {source: "{{e.source}}", target: "{{e.target}}", label: "{{e.label}}"}, classes: "autorotate"},{% endfor %}]},
+          ready: function() { window.cy = this;}
         });
+
+		    cy.on('tap', function(event) {
+          var tappedNow = event.cyTarget;
+          $("#info").html(tappedNow.data("info"))
+		    });
+        
       }); // on dom ready
     </script>
     <!-- End Graph generation -->
@@ -220,6 +228,16 @@
 	                  <li><span style="background-color: {{ p['color'] }}"></span>{{ p['plugin'] }}</li>
                   {% endfor %}
                 </ul>
+              </div>
+            </div>
+            <!-- End Legend -->
+            <!-- Legend -->
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 class="panel-title">Aditional Info</h3>
+              </div>
+              <div class="panel-body">
+                <div id="info"> </div>
               </div>
             </div>
             <!-- End Legend -->

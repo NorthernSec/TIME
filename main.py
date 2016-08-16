@@ -63,6 +63,24 @@ def recurse(payload):
   else:
     print("Current recurse depth: %s"%str(case.recurse))
 
+def title(payload):
+  if payload:
+    case.title = payload
+  else:
+    print("Current title: %s"%case.title)
+
+def description(payload):
+  if payload:
+    case.description = payload
+  else:
+    print("Current description: %s"%case.description)
+
+def notes(payload):
+  if payload:
+    case.notes = payload
+  else:
+    print("Current notes: %s"%case.notes)
+
 def nodes():
   print("Node list:")
   for node in case.nodes:
@@ -92,9 +110,9 @@ if __name__ == '__main__':
       elif command == "add":     add(payload)
       elif command == "exit":    break
       elif command == "recurse": recurse(payload)
-      elif command == "title":   case.title=payload
-      elif command == "descr":   case.description=payload
-      elif command == "notes":   case.notes=payload
+      elif command == "title":   title(payload)
+      elif command == "descr":   description(payload)
+      elif command == "notes":   notes(payload)
       elif command == "nodes":   nodes()
       elif command == "report":  report()
       elif command == "help":    help()

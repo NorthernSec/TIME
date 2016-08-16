@@ -10,6 +10,8 @@
 # Copyright (c) 2016  NorthernSec
 
 # Imports
+import copy
+import markdown
 import os
 import sys
 runPath = os.path.dirname(os.path.realpath(__file__))
@@ -23,9 +25,12 @@ class Visualizer():
     pass
 
   def generate_report(self, case):
+    case = copy.deepcopy(case) # Ensure we don't modify the original object
     app = Flask(__name__, static_folder='static', static_url_path='/static')
     plugins = sorted(PM.get_all_plugins(), key=lambda k: k['plugin'])
     plugins = [x for x in plugins if x["plugin"] in [n.plugin for n in case.nodes]]
+    for node in case.nodes:
+      node.info = markdown.markdown(node.info) if node.info else ""
     custom_css = open(os.path.join(runPath, "templates/static/css/style.css")).read()
     with app.test_request_context("/"):
       return render_template('report.html', plugins=plugins, case=case, 
