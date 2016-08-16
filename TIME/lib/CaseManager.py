@@ -22,8 +22,8 @@ class CaseManager():
     self.plug_man.load_plugins()
 
   def add_intel(self, case, intel, intel_type):
-    if case.add_original_intel(intel, intel_type):
-      node = Node(str(uuid4()), "Original", intel_type, "Original", intel, 0)
+    node = case.add_original_intel(intel, intel_type)
+    if node:
       self.gather_intel(case, node)
 
   def gather_intel(self, case, node):

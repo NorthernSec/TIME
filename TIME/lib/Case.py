@@ -42,9 +42,10 @@ class Case():
   def add_original_intel(self, intel, intel_type):
     if not any(n.uid==intel and n.plugin==conf.NODE_ORIGINAL and
                n.intel_type==intel_type for n in self.nodes):
-      self.nodes.append(Node(str(uuid4()), conf.NODE_ORIGINAL, intel_type, conf.NODE_ORIGINAL, intel, 0))
-      return True
-    return False
+      node = Node(str(uuid4()), conf.NODE_ORIGINAL, intel_type, conf.NODE_ORIGINAL, intel, 0)
+      self.nodes.append(node)
+      return node
+    return None
 
   def add_intel(self, node, edge):
     if not any(n.label==node.label and n.intel_type==node.intel_type and
