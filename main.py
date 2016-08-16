@@ -103,7 +103,7 @@ if __name__ == '__main__':
     try:
       data = input("> ")
       if not data: continue
-      data = data.split()
+      data = data.split(maxsplit=1)
       command = data[0].lower()
       payload = data[1] if len(data) > 1 else None
       if   command == "new":     case=new()
