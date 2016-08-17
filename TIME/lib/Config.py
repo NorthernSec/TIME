@@ -24,14 +24,11 @@ class Configuration():
   ConfigParser.read(os.path.join(runPath, "../etc/configuration.ini"))
   default = {'http_proxy': '', 'plugin_config': './etc/plugins.txt'}
 
-  INTEL_IP     = "intel_ip"
-  INTEL_DOMAIN = "intel_domain"
-  INTEL_ASN    = "intel_asn"
-  INTEL_URL    = "intel_url"
-  INTEL_EMAIL  = "intel_email"
-  INTEL_SHA256 = "intel_sha256"
-  INTEL_MD5    = "intel_md5"
-  INTEL_TEXT   = "intel_text"
+  INTEL_IP    = "intel_ip";    INTEL_DOMAIN = "intel_domain"
+  INTEL_ASN   = "intel_asn";   INTEL_URL    = "intel_url"
+  INTEL_EMAIL = "intel_email"; INTEL_SHA256 = "intel_sha256"
+  INTEL_MD5   = "intel_md5";   INTEL_TEXT   = "intel_text"
+  INTEL_USER  = "intel_user";  INTEL_PHONE  = "intel_phone"
 
   NODE_ORIGINAL = "Original"
 

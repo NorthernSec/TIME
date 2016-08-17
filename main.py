@@ -21,9 +21,12 @@ from TIME.lib.CaseManager import CaseManager
 from TIME.lib.Config      import Configuration as conf
 from TIME.lib.Visualizer  import Visualizer
 
-intel_types={"ip":     conf.INTEL_IP,
-             "domain": conf.INTEL_DOMAIN,
-             "text":   conf.INTEL_TEXT}
+intel_types={"ip":     conf.INTEL_IP,     "domain": conf.INTEL_DOMAIN,
+             "text":   conf.INTEL_TEXT,   "email":  conf.INTEL_EMAIL,
+             "asn":    conf.INTEL_ASN,    "md5":    conf.INTEL_MD5,
+             "sha256": conf.INTEL_SHA256, "url":    conf.INTEL_URL,
+             "user":   conf.INTEL_USER,   "phone":  conf.INTEL_PHONE}
+
 case_manager = CaseManager()
 
 def help():
@@ -31,8 +34,8 @@ def help():
   print(" - new     - Open a new case (discards old)")
   print(" - add     - Add intel to the case")
   print("\tFormat: type=value")
-  print("\t - ip")
-  print("\t - domain")
+  for key in sorted(intel_types.keys()):
+    print("\t - %s"%key)
   print(" - recurse - Set recursion depth (default 1)")
   print(" - title   - Set title for case")
   print(" - descr   - Set description for case")
@@ -97,7 +100,7 @@ def report():
   print("Report to ./reports/%s"%uid)
 
 if __name__ == '__main__':
-  help()
+  print("Type 'help' for more info")
   case=new()
   while True:
     try:
