@@ -30,7 +30,8 @@ class Visualizer():
     plugins = sorted(PM.get_all_plugins(), key=lambda k: k['plugin'])
     plugins = [x for x in plugins if x["plugin"] in [n.plugin for n in case.nodes]]
     for node in case.nodes:
-      node.info = markdown.markdown(node.info) if node.info else ""
+      node.info = markdown.markdown("\n".join(["# %s\n%s"%(x, node.info[x])
+                                              for x in sorted(node.info.keys()) if node.info[x]]))
     custom_css = open(os.path.join(runPath, "templates/static/css/style.css")).read()
     with app.test_request_context("/"):
       return render_template('report.html', plugins=plugins, case=case, 

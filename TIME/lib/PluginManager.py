@@ -65,6 +65,20 @@ class PluginManager():
     # intel is a list of tuples of format (plugin, label, relation, intel type, info)
     return intel
 
+  def get_related_info(self, orig_intel, intel_type):
+    info = []
+    for key in self.plugins.keys():
+      try:
+        new_info = self.plugins[key].get_related_info(orig_intel, intel_type)
+        if new_info:
+          info.extend([(key, x)for x in new_info])
+      except Exception as e:
+        print("[!] Failed to gather info: %s: "%key)
+        print("[!]  -> %s"%e)
+        traceback.print_exc()
+    # info is a list of tuples of format (plugin, info)
+    return info
+
   @classmethod
   def get_default_node_size(self, plugin):
     return db.get_plugins(plugin)["size"]

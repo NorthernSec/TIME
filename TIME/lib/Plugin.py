@@ -19,3 +19,6 @@ class Plugin:
 
   def get_related_intel(self, orig_intel, intel_type):
     return []
+
+  def get_related_info(self, orig_intel, intel_type):
+    return None
