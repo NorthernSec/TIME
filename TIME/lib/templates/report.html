@@ -176,14 +176,31 @@
             .selector('.faded')
             .css({'opacity':      0.25,
                   'text-opacity': 0}),
-          elements:{nodes: [{% for n in case.nodes %}{data: {id: "{{n.uid}}", name: "{{n.label}}", size: {{n.size}}, color: "{{n.color}}", label: "{{n.name}}", info: `{{n.info|safe}}`}},{% endfor %}],
+          elements:{nodes: [{% for n in case.nodes %}{data: {id: "{{n.uid}}", name: `{{n.label}}`, size: {{n.size}}, color: "{{n.color}}", label: `{{n.name}}`, info: `{{n.info|safe}}`}},{% endfor %}],
                     edges: [{% for e in case.edges %}{data: {source: "{{e.source}}", target: "{{e.target}}", label: "{{e.label}}"}, classes: "autorotate"},{% endfor %}]},
           ready: function() { window.cy = this;}
         });
 
+        cy.layout({
+          name: 'cose',
+          animate: true,           animationThreshold: 250,
+          refresh: 20,             fit: true,
+          padding: 30,             boundingBox: undefined,
+          componentSpacing: 100,   nodeOverlap: 10,
+          nestingFactor: 5,        gravity: 80,
+          numIter: 1000,           initialTemp: 200,
+          coolingFactor: 0.95,     minTemp: 1.0,
+          useMultitasking: true,
+          nodeRepulsion: function( node ){ return 400000; },
+          idealEdgeLength: function( edge ){ return 10; },
+          edgeElasticity: function( edge ){ return 100; }
+        });
+
 		    cy.on('tap', function(event) {
           var tappedNow = event.cyTarget;
-          $("#info").html(tappedNow.data("info"))
+          if (tappedNow != cy){
+            $("#info").html(tappedNow.data("info"))
+          }
 		    });
         
       }); // on dom ready
