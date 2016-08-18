@@ -13,6 +13,7 @@
 # Copyright (c) 2016  NorthernSec
 
 # Imports
+import copy
 from datetime import datetime
 from uuid import uuid4
 
@@ -21,14 +22,14 @@ from TIME.lib.PluginManager import PluginManager as pm
 
 class Case():
   def __init__(self, case_nr=None, title=None, descr=None, notes=None,
-                     created=None, recurse=1, nodes=[], edges=[]):
+                     created=None, recurse=1, nodes=None, edges=None):
     self.case_number = case_nr
     self.title       = title
     self.description = descr
     self.notes       = notes
     self.recurse     = recurse
-    self.nodes       = nodes
-    self.edges       = edges
+    self.nodes       = nodes if nodes else []
+    self.edges       = edges if edges else []
 
   def original_intel(self):
     return [n for n in self.nodes if n.recurse_depth is 0]
@@ -59,6 +60,7 @@ class Case():
     if not any(e.target==edge.target and e.source==edge.source for e in self.edges):
       if not any(e.target==edge.source and e.source==edge.target for e in self.edges):
         self.edges.append(edge)
+    return False if "matching" in vars() else True
 
 
 class Node():
@@ -72,8 +74,11 @@ class Node():
     self.recurse_depth = depth
     self.size    = size  if size  else pm.get_default_node_size(plugin)
     self.color   = color if color else pm.get_default_node_color(plugin)
-    self.info          = info
+    self.info          = copy.deepcopy(info) if info else {}
     self.dateFound     = dateFound if dateFound else datetime.now()
+
+  def set_plugin_info(self, plugin, info):
+    self.info[plugin] = info
 
 class Edge():
   def __init__(self, source_id, target_id, label):
