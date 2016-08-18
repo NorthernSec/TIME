@@ -29,6 +29,7 @@ intel_types={"ip":     conf.INTEL_IP,     "domain": conf.INTEL_DOMAIN,
              "user":   conf.INTEL_USER,   "phone":  conf.INTEL_PHONE}
 
 case_manager = CaseManager()
+case = Case()
 
 def help():
   print("Commands:")
@@ -45,9 +46,6 @@ def help():
   print(" - report  - Export a report in html format")
   print(" - exit    - Exit the interface")
   print()
-
-def new():
-  return Case(title="", descr="", notes="", nodes=[], edges=[])
 
 def add(payload):
   try:
@@ -101,12 +99,11 @@ def report():
   print("Report to ./reports/%s"%uid)
 
 def interpretCommand(data):
-  global case
   if not data: return True
   data = data.split(maxsplit=1)
   command = data[0].lower()
   payload = data[1] if len(data) > 1 else None
-  if   command == "new":     case=new()
+  if   command == "new":     case=Case()
   elif command == "add":     add(payload)
   elif command == "exit":    sys.exit()
   elif command == "recurse": recurse(payload)
@@ -116,7 +113,6 @@ def interpretCommand(data):
   elif command == "nodes":   nodes()
   elif command == "report":  report()
   elif command == "help":    help()
-  elif command == "test": print(case.nodes[int(payload)].__dict__)
   else: return False
   return True
 
@@ -124,7 +120,6 @@ if __name__ == '__main__':
   argParser = argparse.ArgumentParser(description='Admin account creator for the mongo database')
   argParser.add_argument('-f', type=str, help='File to parse')
   args = argParser.parse_args()
-  case=new()
 
   if args.f:
     try:
