@@ -73,6 +73,8 @@ class Configuration():
       if type(content) == bytes:
         content = content.decode('utf-8')
       return content
+    except urllib.error.HTTPError:
+      return ""
     except Exception as e:
       # Log exception
       print("Error: %s on %s"%(str(e), getfile))
