@@ -11,6 +11,7 @@
 # Copyright (c) 2016  NorthernSec
 
 # Imports
+import argparse
 import os
 import uuid
 import sys
@@ -99,27 +100,47 @@ def report():
     f.write(report)
   print("Report to ./reports/%s"%uid)
 
+def interpretCommand(data):
+  global case
+  if not data: return True
+  data = data.split(maxsplit=1)
+  command = data[0].lower()
+  payload = data[1] if len(data) > 1 else None
+  if   command == "new":     case=new()
+  elif command == "add":     add(payload)
+  elif command == "exit":    sys.exit()
+  elif command == "recurse": recurse(payload)
+  elif command == "title":   title(payload)
+  elif command == "descr":   description(payload)
+  elif command == "notes":   notes(payload)
+  elif command == "nodes":   nodes()
+  elif command == "report":  report()
+  elif command == "help":    help()
+  elif command == "test": print(case.nodes[int(payload)].__dict__)
+  else: return False
+  return True
+
 if __name__ == '__main__':
-  print("Type 'help' for more info")
+  argParser = argparse.ArgumentParser(description='Admin account creator for the mongo database')
+  argParser.add_argument('-f', type=str, help='File to parse')
+  args = argParser.parse_args()
   case=new()
-  while True:
+
+  if args.f:
     try:
-      data = input("> ")
-      if not data: continue
-      data = data.split(maxsplit=1)
-      command = data[0].lower()
-      payload = data[1] if len(data) > 1 else None
-      if   command == "new":     case=new()
-      elif command == "add":     add(payload)
-      elif command == "exit":    break
-      elif command == "recurse": recurse(payload)
-      elif command == "title":   title(payload)
-      elif command == "descr":   description(payload)
-      elif command == "notes":   notes(payload)
-      elif command == "nodes":   nodes()
-      elif command == "report":  report()
-      elif command == "help":    help()
-      else:
-        print("Unknown command. Press type help for help.")
-    except (EOFError, KeyboardInterrupt):
-      sys.exit()
+      commands = open(args.f, "r").read().split("\n")
+    except:
+      sys.exit("Could not open %s. Does it exist?"%args.f)
+    for command in commands:
+      if command.startswith("#"): continue
+      if not interpretCommand(command):
+        print("Wrong command: %s"%command)
+  else:
+    print("Type 'help' for more info")
+    while True:
+      try:
+        data = input("> ")
+        if not interpretCommand(data):
+          print("Unknown command. Press type help for help.")
+      except (EOFError, KeyboardInterrupt):
+        sys.exit()
