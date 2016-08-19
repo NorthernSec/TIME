@@ -24,3 +24,14 @@ def getFunctions(classObj):
     if type(getattr(classObj, d)) == types.MethodType:
       functs.append(d)
   return functs
+
+def to_dict(obj):
+  result = obj
+  if hasattr(obj, "__dict__"):
+    result = obj.__dict__
+    for key, value in result.items():
+      if type(value) in [list, set]:
+        result[key] = [to_dict(o) for o in value]
+      if type(value) is dict:
+        for k in value.keys(): value[k] = to_dict(value[k])
+  return result
