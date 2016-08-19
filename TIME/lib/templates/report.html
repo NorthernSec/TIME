@@ -139,6 +139,7 @@
       }
       .legend{
         list-style: none;
+        margin-left: -40px;
       }
       .legend span{
         border: 1px solid #ccc;
@@ -157,6 +158,7 @@
         $('#cy').cytoscape({
           maxZoom: 10,
           minZoom: 0.25,
+          wheelSensitivity: 0.33,
           style: cytoscape.stylesheet()
             .selector('node')
             .css({'content':          'data(name)',
@@ -176,7 +178,7 @@
             .selector('.faded')
             .css({'opacity':      0.25,
                   'text-opacity': 0}),
-          elements:{nodes: [{% for n in case.nodes %}{data: {id: "{{n.uid}}", name: `{{n.label}}`, size: {{n.size}}, color: "{{n.color}}", label: `{{n.name}}`, info: `{{n.info|safe}}`}},{% endfor %}],
+          elements:{nodes: [{% for n in case.nodes %}{data: {id: "{{n.uid}}", plugin: "{{n.plugin}}", name: `{{n.label}}`, size: {{n.size}}, color: "{{n.color}}", label: `{{n.name}}`, info: `{{n.info|safe}}`}},{% endfor %}],
                     edges: [{% for e in case.edges %}{data: {source: "{{e.source}}", target: "{{e.target}}", label: "{{e.label}}"}, classes: "autorotate"},{% endfor %}]},
           ready: function() { window.cy = this;}
         });
@@ -197,12 +199,32 @@
         });
 
 		    cy.on('tap', function(event) {
-          var tappedNow = event.cyTarget;
-          if (tappedNow != cy){
-            $("#info").html(tappedNow.data("info"))
+          try{
+            var target = event.cyTarget;
+            if( target.isNode() ){
+              var neighborhood = target.neighborhood().add(target);
+              cy.elements().addClass('faded');
+              neighborhood.removeClass('faded');
+              $("#info").html(target.data("info")); }
+          }catch(err){  // If this fails, we know it's the backdrop
+            cy.elements().removeClass('faded');
+            $("#info").html(""); }
           }
-		    });
-        
+        });
+        // Filters plugins
+        $('[id^=filter_').on('click', function(){
+          cy.batch(function(){
+            cy.nodes().forEach(function( n ){
+              n.css('visibility', 'visible');
+              $('input:checkbox[id^=filter_]:not(:checked)').each(function( i ){
+                var id_parts = $(this).attr('id').split("_");
+                var type  = id_parts[1];
+                var value = id_parts.slice(2).join("_");
+                if( n.data(type) === value ){ n.css('visibility', 'hidden'); }
+              })
+            })
+          })
+        })
       }); // on dom ready
     </script>
     <!-- End Graph generation -->
@@ -224,16 +246,6 @@
               </div>
             </div>
             <!-- End Case -->
-            <!-- Filters 
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <h3 class="panel-title">Filters</h3>
-              </div>
-              <div class="panel-body">
-                Filters come here
-              </div>
-            </div>
-            <!-- End Filters -->
             <!-- Legend -->
             <div class="panel panel-default">
               <div class="panel-heading">
@@ -242,12 +254,26 @@
               <div class="panel-body">
                 <ul class="legend">
                   {% for p in plugins %}
-	                  <li><span style="background-color: {{ p['color'] }}"></span>{{ p['plugin'] }}</li>
-                  {% endfor %}
+                  <li>
+                    <input id="filter_plugin_{{p['plugin']}}" checked type="checkbox"> </input>  
+                    <span style="background-color: {{ p['color'] }}"></span>{{ p['plugin'] }}
+                  </li>{% endfor %}
                 </ul>
               </div>
             </div>
             <!-- End Legend -->
+            <!-- Filters  -->
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 class="panel-title">Filters</h3>
+              </div>
+              <div class="panel-body">
+                <ul class="legend">
+                  {% for l in labels %}<li><input id="filter_label_{{l}}" checked type="checkbox"> </input>{{l}}</li>{% endfor %}
+                </ul>
+              </div>
+            </div>
+            <!-- End Filters -->
             <!-- Legend -->
             <div class="panel panel-default">
               <div class="panel-heading">

@@ -29,10 +29,12 @@ class Visualizer():
     app = Flask(__name__, static_folder='static', static_url_path='/static')
     plugins = sorted(PM.get_all_plugins(), key=lambda k: k['plugin'])
     plugins = [x for x in plugins if x["plugin"] in [n.plugin for n in case.nodes]]
+    labels = list(set([n.name.title() for n in case.nodes]))
     for node in case.nodes:
+      node.name = node.name.title()
       node.info = markdown.markdown("\n".join(["# %s\n%s"%(x, node.info[x])
                                               for x in sorted(node.info.keys()) if node.info[x]]))
     custom_css = open(os.path.join(runPath, "templates/static/css/style.css")).read()
     with app.test_request_context("/"):
       return render_template('report.html', plugins=plugins, case=case, 
-                                            custom_css = custom_css)
+                                            labels=labels)
