@@ -12,46 +12,54 @@
 # Imports
 import sqlite3
 
-path = ":memory:"
-db=sqlite3.connect(path)
+from TIME.lib.Config import Configuration as conf
+
+memDB = sqlite3.connect(":memory:")
+realDB = conf.getPSQLConnection()
 
 def _dbWrapped(funct):
-    def wrapper(*args, **kwargs):
+  def wrapper(*args, **kwargs):
+    if realDB:
+      db =realDB
+      cur=realDB.cursor()
+    else:
       ensureDB()
-      result = funct(*args, **kwargs)
-      return result
-    return wrapper
+      db =memDB
+      cur=memDB.cursor()
+    result = funct(db, cur, *args, **kwargs)
+    cur.close()
+    return result
+  return wrapper
+
+def _requiresRealDB(funct):
+  def wrapper(*args, **kwargs):
+    if not realDB: sys.exit("Could not reach the postgres database")
 
 def ensureDB():
-  db.execute('''CREATE TABLE IF NOT EXISTS Plugins
-                (Plugin  Text     PRIMARY KEY,
-                 Color   TEXT,
-                 Size    INTEGER  DEFAULT 30);''')
+  memDB.execute('''CREATE TABLE IF NOT EXISTS Plugins
+                  (Plugin_ID  INT      PRIMARY KEY,
+                   Name       Text     UNIQUE,
+                   Color      TEXT,
+                   Size       INTEGER  DEFAULT 30);''')
 
-##############
-# Store data #
-##############
-# Plugins
+############################################################################
+# These functions are available for both the postgres db and the memory db #
+############################################################################
 @_dbWrapped
-def add_plugin_info(plugin, color, size = 30):
-  db.execute("""INSERT OR REPLACE INTO Plugins(Plugin, Color, Size)
-                VALUES(?, ?, ?)""", (plugin, color, size))
+def add_plugin_info(db, curs, plugin, color, size = 30):
+  curs.execute("""INSERT INTO Plugins(Name, Color, Size)
+                  VALUES(?, ?, ?)""", (plugin, color, size))
   db.commit()
 
-##############
-# Fetch data #
-##############
-# Plugins
 def get_plugins(plugin=None):
-  where = ["Plugin='%s'"%plugin] if plugin else []
+  where = ["Name='%s'"%plugin] if plugin else []
   p = selectAllFrom("Plugins", where)
   if plugin:
     return p[0] if len(p) is 1 else None
   else: return p
 
 @_dbWrapped
-def selectAllFrom(table, where=None):
-  curs=db.cursor()
+def selectAllFrom(db, curs, table, where=None):
   wh="where "+" and ".join(where) if where else ""
   data=list(curs.execute("SELECT * FROM %s %s"%(table,wh)))
   dataArray=[]

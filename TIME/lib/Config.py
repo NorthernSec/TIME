@@ -14,15 +14,28 @@ import os
 runPath = os.path.dirname(os.path.realpath(__file__))
 
 import configparser
+import gzip
 import urllib.parse
 import urllib.request as req
 from io import BytesIO
-import gzip
+from OpenSSL import SSL
+
+try:
+  import psycopg2
+except:
+  print("Dependencies missing! First run the install script.")
 
 class Configuration():
   ConfigParser = configparser.ConfigParser()
   ConfigParser.read(os.path.join(runPath, "../etc/configuration.ini"))
-  default = {'http_proxy': '', 'plugin_config': './etc/plugins.txt'}
+  default = {'http_proxy': '',      'plugin_config': './etc/plugins.txt',
+             'host': "127.0.0.1",   'port': 8350,
+             'debug': True,         'threads': 1,
+             'ssl': False,          'sslCert': "./ssl/TIME.crt",
+                                    'sslKey':  "./ssl/TIME.key",
+             'authRequired': False, 'auth_load': './etc/auth.txt',
+             'dbHost': 'localhost', 'dbPort': 5432,
+             'db': 'nstime',        'dbPWD': 'nstime'}
 
   INTEL_IP    = "intel_ip";    INTEL_DOMAIN = "intel_domain"
   INTEL_ASN   = "intel_asn";   INTEL_URL    = "intel_url"
@@ -80,7 +93,48 @@ class Configuration():
       print("Error: %s on %s"%(str(e), getfile))
       return None
 
+  # Web server
+  @classmethod
+  def getFlaskSettings(cls):
+    data = {'host':  cls.readSetting("Flask", "host", cls.default['host']),
+            'port':  cls.readSetting("Flask", "port", cls.default['port']),
+            'debug': cls.readSetting("Flask", "debug", cls.default['debug'])}
+    if cls.readSetting("SSL", "ssl", cls.default['ssl']):
+      try:
+        context = SSL.Context(SSL.SSLv23_METHOD)
+        context.use_privatekey_file( cls.readSetting("SSL", "key",  cls.default['sslKey']))
+        context.use_certificate_file(cls.readSetting("SSL", "cert", cls.default['sslCert']))
+        data['ssl_context'] = contect
+      except Exception as e:
+        print("[!] Could not read the SSL data! SSL not enabled!")
+        print(" -> %s"%e)
+    return data
+
+  @classmethod
+  def loginRequired(cls):
+    return cls.readSetting("Auth", "required", cls.default['authRequired'])
+
+  @classmethod
+  def getAuthLoadSettings(cls):
+    return cls.toPath(cls.readSetting("Auth", "settings", cls.default['auth_load']))
+
   # Plugins
   @classmethod
   def getPluginsettings(cls):
     return cls.toPath(cls.readSetting("Plugins", "pluginSettings", cls.default['plugin_config']))
+
+  # Database
+  @classmethod
+  def getPSQLConnection(cls):
+    h   = cls.readSetting("Database", "Host", cls.default['dbHost'])
+    p   = cls.readSetting("Database", "Port", cls.default['dbPort'])
+    d   = cls.readSetting("Database", "db",   cls.default['db'])
+    pwd = cls.readSetting("Database", "password", cls.default['dbPWD'])
+    try:
+      conn = psycopg2.connect("host='%s' port='%s' dbname=%s user=nstime password=%s"%(h, p, d, pwd))
+    except Exception as e:
+      print(e)
+      print("Unable to connect to PostgreSQL. Is it running on %s:%s? Some features might be unavailable"%(h,p))
+      conn = None
+    return conn
+

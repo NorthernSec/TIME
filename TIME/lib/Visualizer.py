@@ -27,8 +27,8 @@ class Visualizer():
   def generate_report(self, case):
     case = copy.deepcopy(case) # Ensure we don't modify the original object
     app = Flask(__name__, static_folder='static', static_url_path='/static')
-    plugins = sorted(PM.get_all_plugins(), key=lambda k: k['plugin'])
-    plugins = [x for x in plugins if x["plugin"] in [n.plugin for n in case.nodes]]
+    plugins = sorted(PM.get_all_plugins(), key=lambda k: k['name'])
+    plugins = [x for x in plugins if x["name"] in [n.plugin for n in case.nodes]]
     labels = list(set([n.name.title() for n in case.nodes]))
     for node in case.nodes:
       node.name = node.name.title()
