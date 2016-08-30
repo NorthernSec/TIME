@@ -34,7 +34,6 @@ class Visualizer():
       node.name = node.name.title()
       node.info = markdown.markdown("\n".join(["# %s\n%s"%(x, node.info[x])
                                               for x in sorted(node.info.keys()) if node.info[x]]))
-    custom_css = open(os.path.join(runPath, "templates/static/css/style.css")).read()
     with app.test_request_context("/"):
       return render_template('report.html', plugins=plugins, case=case, 
                                             labels=labels)
