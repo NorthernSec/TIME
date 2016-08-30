@@ -16,7 +16,7 @@ import sys
 import traceback
 
 from TIME.lib.Config import Configuration as conf
-import TIME.lib.DatabaseConnection as db
+import TIME.lib.DatabaseLayer as db
 import TIME.lib.Toolkit as TK
 
 class PluginManager():
@@ -31,7 +31,7 @@ class PluginManager():
     # Read and parse plugin file
     data = open(conf.getPluginsettings(), "r").read()
     data = [x.split(maxsplit=3) for x in data.splitlines() if not x.startswith("#") and x]
-    db.add_plugin_info(conf.NODE_ORIGINAL, "#666677")
+    db.add_plugin(conf.NODE_ORIGINAL, "#666677")
     for x in [x for x in data if len(x) in [2, 3]]:
       try:
         x.extend(['']*(3-len(x))) # add empty args if none exist
@@ -45,11 +45,12 @@ class PluginManager():
         # Add to plugins
         self.plugins[pluginName] = plugin
         color = TK.generate_unique_color([x["color"] for x in self.get_all_plugins()])
-        db.add_plugin_info(pluginName, color)
+        db.add_plugin(pluginName, color)
         print("[+] Plugin loaded: %s"%x[0])
       except Exception as e:
         print("[!] Failed to load plugin: %s: "%x[0])
         print("[!]  -> %s"%e)
+        traceback.print_exc()
 
   def get_related_intel(self, orig_intel, intel_type):
     intel = []

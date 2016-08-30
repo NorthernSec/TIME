@@ -22,7 +22,7 @@ from TIME.lib.PluginManager import PluginManager as pm
 
 class Case():
   def __init__(self, case_nr=None, title=None, descr=None, notes=None,
-                     created=None, recurse=1, nodes=None, edges=None):
+                     recurse=1, nodes=None, edges=None):
     self.case_number = case_nr
     self.title       = title
     self.description = descr
@@ -62,10 +62,9 @@ class Case():
         self.edges.append(edge)
     return False if "matching" in vars() else True
 
-
 class Node():
   def __init__(self, uid, plugin, intel_type, name, label, depth,
-                     size=None, color=None, info=None, dateFound=None):
+                     size=None, color=None, info=None, x=None, y=None):
     self.uid           = uid
     self.plugin        = plugin
     self.intel_type    = intel_type
@@ -75,7 +74,8 @@ class Node():
     self.size    = size  if size  else pm.get_default_node_size(plugin)
     self.color   = color if color else pm.get_default_node_color(plugin)
     self.info          = copy.deepcopy(info) if info else {}
-    self.dateFound     = dateFound if dateFound else datetime.now()
+    self.x             = x
+    self.y             = y
 
   def set_plugin_info(self, plugin, info):
     self.info[plugin] = info
