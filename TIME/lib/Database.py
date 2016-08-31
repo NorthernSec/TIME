@@ -61,13 +61,20 @@ class PostgresDatabase():
 class SQLITEDatabase():
   def __init__(self):
     import TIME.lib as lib
-    self.db = sqlite3.connect(":memory:")
-    self.cur = self.db.cursor()
     lib = os.path.dirname(os.path.realpath(lib.__file__))
+    try:
+      database = conf.getSQLITEPath()
+      make_data = False if os.path.isfile(database) else True
+      self.db = sqlite3.connect(database)
+      self.cur = self.db.cursor()
 
-    db_struct = open(os.path.join(lib, "db_model.sql")).read()
-    for statement in db_struct.split(";"): self.cur.execute(statement+";")
-    #self.db_data   = open(os.path.join(lib, "db_data.sql")).read()
+      db_struct = open(os.path.join(lib, "db_model.sql")).read()
+      for s in db_struct.split(";"): self.cur.execute(s+";")
+      if make_data:
+        db_data   = open(os.path.join(lib, "db_data.sql")).read()
+        for s in db_data.split(";"): self.cur.execute(s+";")
+    except Exception as e:
+      sys.exit("Could not create sqlite DB: %s"%e)
 
   def add_plugin(self, plugin, color, size = 30):
     self.cur.execute("""INSERT INTO Plugins(Name, Color, Size)
@@ -102,7 +109,8 @@ class SQLITEDatabase():
       if type(where) not in [tuple, list] or len(where) is not 2:
         raise(Exception)
       wh, vals = where
-      wh="where "+" and ".join(where[0]) if where and where[0] else ""
+      wh="where "+" and ".join(wh) if type(wh) is list else "where %s"%wh
+      vals = vals if type(vals) in [list, tuple] else (vals,)
     data=list(self.cur.execute("SELECT * FROM %s %s %s;"%(table, wh, lim), vals))
     dataArray=[]
     names = list(map(lambda x: x[0], self.cur.description))
