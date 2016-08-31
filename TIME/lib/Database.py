@@ -75,15 +75,35 @@ class SQLITEDatabase():
     self.db.commit()
 
   def get_plugins(self, plugin=None):
-    where = ["Name='%s'"%plugin] if plugin else []
+    where = ("Name = ?", plugin) if plugin else None
     return self._selectAllFrom("Plugins", where)
 
   def get_user(self, username):
-    return self.cur.execute("SELECT * FROM Users WHERE username = %s", username)
+    return self._selectAllFrom("Users", ("username = ?", username), 1)
 
-  def _selectAllFrom(self, table, where=None):
-    wh="where "+" and ".join(where) if where else ""
-    data=list(self.cur.execute("SELECT * FROM %s %s"%(table,wh)))
+  def teams_for_user(self, username):
+    wh = """Team_ID IN(
+              SELECT Team_ID FROM Users_In_Teams WHERE User_ID IN(
+                SELECT User_ID FROM Users WHERE Username = ?))"""
+    return self._selectAllFrom("Teams", (wh, username))
+
+  def cases_for_team(self, team):
+    wh = """Case_ID IN(
+              SELECT Case_ID FROM Case_Access WHERE Team_ID IN(
+                SELECT Team_ID FROM Teams WHERE Name = ?))"""
+    return self._selectAllFrom("Cases", (wh, team))
+
+
+  def _selectAllFrom(self, table, where=None, limit=None):
+    vals = ()
+    wh   = ""
+    lim  = " LIMIT %s"%limit if limit else ""
+    if where:
+      if type(where) not in [tuple, list] or len(where) is not 2:
+        raise(Exception)
+      wh, vals = where
+      wh="where "+" and ".join(where[0]) if where and where[0] else ""
+    data=list(self.cur.execute("SELECT * FROM %s %s %s;"%(table, wh, lim), vals))
     dataArray=[]
     names = list(map(lambda x: x[0], self.cur.description))
     for d in data:
@@ -92,5 +112,3 @@ class SQLITEDatabase():
         j[names[i].lower()]=d[i]
       dataArray.append(j)
     return dataArray
-
-
