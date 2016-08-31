@@ -18,7 +18,6 @@ from datetime import datetime
 from uuid import uuid4
 
 from TIME.lib.Config import Configuration as conf
-from TIME.lib.PluginManager import PluginManager as pm
 
 class Case():
   def __init__(self, case_nr=None, title=None, descr=None, notes=None,
@@ -62,9 +61,21 @@ class Case():
         self.edges.append(edge)
     return False if "matching" in vars() else True
 
+  @classmethod
+  def from_dict(self_class, d):
+    try:
+      nodes = list(filter(None, [Node.from_dict(node) for node in d.get('nodes', [])]))
+      edges = list(filter(None, [Edge.from_dict(node) for node in d.get('edges', [])]))
+      return self_class(d['case_id'], d['title'], d['description'], d['notes'], d['recurse'], nodes, edges)
+    except:
+      None
+
 class Node():
   def __init__(self, uid, plugin, intel_type, name, label, depth,
                      size=None, color=None, info=None, x=None, y=None):
+    # Importing here, to avoid circular importing
+    from TIME.lib.PluginManager import PluginManager as pm
+
     self.uid           = uid
     self.plugin        = plugin
     self.intel_type    = intel_type
@@ -80,8 +91,24 @@ class Node():
   def set_plugin_info(self, plugin, info):
     self.info[plugin] = info
 
+  @classmethod
+  def from_dict(self_class, d):
+    try:
+      return self_class(d['uuid'], d['plugin'], d['type'], d['name'],
+                        d['label'], d['recurse_depth'], d['size'],
+                        d['color'], d['x'], d['y'])
+    except:
+      return None
+
 class Edge():
   def __init__(self, source_id, target_id, label):
     self.source = source_id
     self.target = target_id
     self.label  = label
+
+  @classmethod
+  def from_dict(self, d):
+    try:
+      return Edge(d['source_id'], d['target_id'], d['label'])
+    except:
+      return None

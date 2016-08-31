@@ -14,6 +14,7 @@
 from passlib.hash import pbkdf2_sha256
 
 from TIME.lib.Database import PostgresDatabase, SQLITEDatabase
+from TIME.lib.Case import Case, Edge, Node
 
 hash_rounds = 8000
 salt_size   = 10
@@ -53,8 +54,7 @@ def teams_for_user(username):
 def get_cases_accessible_by_user(username):
   cases = []
   for team in teams_for_user(username):
-    cases.extend(db.cases_for_team(team['name']))
-  for case in cases: CaseManager.case_from_dict(case)
+    cases.extend([Case.from_dict(x) for x in db.cases_for_team(team['name'])])
   return cases
     
 
