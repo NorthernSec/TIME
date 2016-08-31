@@ -35,7 +35,8 @@ class Configuration():
                                     'sslKey':  "./ssl/TIME.key",
              'authRequired': False, 'auth_load': './etc/auth.txt',
              'dbHost': 'localhost', 'dbPort': 5432,
-             'db': 'nstime',        'dbPWD': 'nstime'}
+             'db': 'nstime',        'dbPWD': 'nstime',
+             'sqlite': ':memory:'}
 
   INTEL_IP    = "intel_ip";    INTEL_DOMAIN = "intel_domain"
   INTEL_ASN   = "intel_asn";   INTEL_URL    = "intel_url"
@@ -98,7 +99,13 @@ class Configuration():
   def getFlaskSettings(cls):
     data = {'host':  cls.readSetting("Flask", "host", cls.default['host']),
             'port':  cls.readSetting("Flask", "port", cls.default['port']),
-            'debug': cls.readSetting("Flask", "debug", cls.default['debug'])}
+            'debug': cls.readSetting("Flask", "debug", cls.default['debug']),
+            'processes': cls.readSetting("Flask", "debug", cls.default['threads'])}
+    # If fallback db (sqlite), use only one thread:
+    if not cls.getPSQLConnection():
+      data['threaded'] = False
+      data['use_reloader'] = False
+    # SSL wrapper
     if cls.readSetting("SSL", "ssl", cls.default['ssl']):
       try:
         context = SSL.Context(SSL.SSLv23_METHOD)
@@ -133,8 +140,10 @@ class Configuration():
     try:
       conn = psycopg2.connect("host='%s' port='%s' dbname=%s user=nstime password=%s"%(h, p, d, pwd))
     except Exception as e:
-      print(e)
-      print("Unable to connect to PostgreSQL. Is it running on %s:%s? Some features might be unavailable"%(h,p))
+      print("%s\nSome features might be unavailable"%e)
       conn = None
     return conn
 
+  @classmethod
+  def getSQLITEPath(cls):
+    return cls.readSetting("Database", "fallback", cls.default['sqlite'])
