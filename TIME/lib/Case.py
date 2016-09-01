@@ -66,7 +66,8 @@ class Case():
     try:
       nodes = list(filter(None, [Node.from_dict(node) for node in d.get('nodes', [])]))
       edges = list(filter(None, [Edge.from_dict(node) for node in d.get('edges', [])]))
-      return self_class(d['case_id'], d['title'], d['description'], d['notes'], d['recurse'], nodes, edges)
+      case_id = d['case_id'] if 'case_id' in d else d['case_number']
+      return self_class(case_id, d['title'], d['description'], d['notes'], d['recurse'], nodes, edges)
     except:
       None
 
