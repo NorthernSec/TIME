@@ -1,0 +1,66 @@
+{% extends 'layouts/master-page' %}
+{% block title %}Quick Case{% endblock %}
+{% block head %}
+
+{% endblock %}
+{% block content %}
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <!-- Case -->
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Case</h3>
+      </div>
+      <div class="panel-body">
+        <h3>{{case.title}}</h3>
+        <strong>{{case.description}}</strong>
+        <p>{{case.notes}}</p>
+      </div>
+    </div>
+    <!-- End Case -->
+    <!-- Legend -->
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Legend</h3>
+      </div>
+      <div class="panel-body">
+        <ul class="legend">
+          {% for p in plugins %}
+          <li>
+            <input id="filter_plugin_{{p['plugin']}}" checked type="checkbox"> </input>  
+            <span style="background-color: {{ p['color'] }}"></span>{{ p['plugin'] }}
+          </li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+    <!-- End Legend -->
+    <!-- Filters  -->
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Filters</h3>
+      </div>
+      <div class="panel-body">
+        <ul class="legend">
+          {% for l in labels %}<li><input id="filter_label_{{l}}" checked type="checkbox"> </input>{{l}}</li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+    <!-- End Filters -->
+    <!-- Legend -->
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Aditional Info</h3>
+      </div>
+      <div class="panel-body">
+        <div id="info"> </div>
+      </div>
+    </div>
+    <!-- End Legend -->
+  </div>
+  <!-- End Sidebar -->
+  <!-- Content -->
+  <div id="content">
+    <div id="cy"></div>
+  </div>
+  <!-- Body End -->
+{% endblock %}

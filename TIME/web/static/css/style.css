@@ -1,0 +1,47 @@
+html, body{
+  height: 100%;
+}
+body{
+  background: #EEEEEE;
+}
+#sidebar{
+  width: 200 px;
+  background: #606060;
+  height: 100%;
+  float: left;
+  padding: 10px;
+}
+
+#content{
+  height:100%;
+  width: calc(100% - 200px);
+  float:right;
+}
+
+#cy{
+  position: center;
+  position:absolute;
+  top: 2%;
+  height: 100%;
+  width: 98%;
+}
+
+.legend{
+  list-style: none;
+}
+
+.legend span{
+  border: 1px solid #ccc;
+  float: left;
+  width: 12px;
+  height: 12px;
+  margin: 2px;
+}
+
+.bodystrap{
+  width: 94%;
+  height:100%;
+  margin: auto;
+  background: #D0D0D0;
+  padding: 10px;
+}
