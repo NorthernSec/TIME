@@ -89,8 +89,7 @@ def nodes():
     print(" - %s\t%s\t Distance: %s"%(node.name, node.label, node.recurse_depth))
 
 def report():
-  v = Visualizer()
-  report = v.generate_report(case)
+  report = Visualizer.generate_report(case)
   if not os.path.exists(os.path.join(runPath, "reports")):
     os.makedirs(os.path.join(runPath, "reports"))
   uid = str(uuid.uuid4())+".html"
