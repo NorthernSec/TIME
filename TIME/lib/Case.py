@@ -42,17 +42,17 @@ class Case():
   def add_original_intel(self, intel, intel_type):
     if not any(n.uid==intel and n.plugin==conf.NODE_ORIGINAL and
                n.intel_type==intel_type for n in self.nodes):
-      node = Node(str(uuid4()), conf.NODE_ORIGINAL, intel_type, conf.NODE_ORIGINAL, intel, 0)
+      node = Node(str(uuid4()), conf.NODE_ORIGINAL, intel_type, intel, conf.NODE_ORIGINAL, 0)
       self.nodes.append(node)
       return node
     return None
 
   def add_intel(self, node, edge):
-    if not any(n.label==node.label and n.intel_type==node.intel_type and
+    if not any(n.name==node.name and n.intel_type==node.intel_type and
                n.info ==node.info  for n in self.nodes):
       self.nodes.append(node)
     else:
-      matching = next((n for n in self.nodes if n.label==node.label and
+      matching = next((n for n in self.nodes if n.name==node.name and
                                                 n.intel_type==node.intel_type and
                                                 n.info==node.info), None)
       edge.target = matching.uid

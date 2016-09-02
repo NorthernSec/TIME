@@ -18,6 +18,7 @@ runPath = os.path.dirname(os.path.realpath(__file__))
 
 from flask import Flask, render_template
 
+from TIME.lib.Config        import Configuration as conf
 from TIME.lib.PluginManager import PluginManager as PM
 
 class Visualizer():
@@ -37,9 +38,10 @@ class Visualizer():
     case = copy.deepcopy(case) # Ensure we don't modify the original object
     plugins = sorted(PM.get_all_plugins(), key=lambda k: k['name'])
     plugins = [x for x in plugins if x["name"] in [n.plugin for n in case.nodes]]
-    labels = list(set([n.name.title() for n in case.nodes]))
+    labels = list(set([n.label.title() for n in case.nodes]))
     for node in case.nodes:
-      node.name = node.name.title()
+      node.label = node.label.title()
       node.info = markdown.markdown("\n".join(["# %s\n%s"%(x, node.info[x])
                                               for x in sorted(node.info.keys()) if node.info[x]]))
-    return {'case': case, 'plugins': plugins, 'labels': labels}
+    intel = [x for x in dir(conf) if x.startswith("INTEL_")]
+    return {'case': case, 'plugins': plugins, 'labels': labels, 'intel': intel}

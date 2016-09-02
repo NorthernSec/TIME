@@ -178,7 +178,7 @@
             .selector('.faded')
             .css({'opacity':      0.25,
                   'text-opacity': 0}),
-          elements:{nodes: [{% for n in case.nodes %}{data: {id: "{{n.uid}}", plugin: "{{n.plugin}}", name: `{{n.label}}`, size: {{n.size}}, color: "{{n.color}}", label: `{{n.name}}`, info: `{{n.info|safe}}`}},{% endfor %}],
+          elements:{nodes: [{% for n in case.nodes %}{data: {id: "{{n.uid}}", plugin: "{{n.plugin}}", name: `{{n.name}}`, size: {{n.size}}, color: "{{n.color}}", label: `{{n.label}}`, info: `{{n.info|safe}}`}},{% endfor %}],
                     edges: [{% for e in case.edges %}{data: {source: "{{e.source}}", target: "{{e.target}}", label: "{{e.label}}"}, classes: "autorotate"},{% endfor %}]},
           ready: function() { window.cy = this;}
         });
@@ -255,7 +255,7 @@
                   {% for p in plugins %}
                   <li>
                     <input id="filter_plugin_{{p['plugin']}}" checked type="checkbox"> </input>  
-                    <span style="background-color: {{ p['color'] }}"></span>{{ p['plugin'] }}
+                    <span style="background-color: {{ p['color'] }}"></span>{{ p['name'] }}
                   </li>{% endfor %}
                 </ul>
               </div>

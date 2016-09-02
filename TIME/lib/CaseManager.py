@@ -17,9 +17,11 @@ from TIME.lib.PluginManager import PluginManager
 from TIME.lib.Case import Case, Edge, Node
 
 class CaseManager():
-  def __init__(self):
-    self.plug_man = PluginManager()
-    self.plug_man.load_plugins()
+  def __init__(self, plugin_manager = None):
+    self.plug_man = plugin_manager
+    if not plugin_manager:
+      self.plug_man = PluginManager()
+      self.plug_man.load_plugins()
 
   def add_intel(self, case, intel, intel_type):
     node = case.add_original_intel(intel, intel_type)
@@ -38,11 +40,11 @@ class CaseManager():
     while not work_queue.empty():
       q_node = work_queue.get() # q_ for "query intel"
       # Look for next nodes
-      n_intel = self.plug_man.get_related_intel(q_node.label, q_node.intel_type)
+      n_intel = self.plug_man.get_related_intel(q_node.name, q_node.intel_type)
       for n in n_intel:
         # Turn the information into objects & add them to the case
         plugin, label, relation, intel_type, info = n
-        node = Node(str(uuid4()), plugin, intel_type, relation, label,
+        node = Node(str(uuid4()), plugin, intel_type, label, relation,
                     q_node.recurse_depth + 1)
         if info: node.set_plugin_info(plugin, info)
         self.update_node_info(node)
