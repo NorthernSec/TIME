@@ -1,11 +1,87 @@
 {% extends 'layouts/master-page' %}
 {% block title %}Quick Case{% endblock %}
 {% block head %}
+  <script type="text/javascript" src="/static/js/cytoscape.min.js"></script>
 
+  <script>
+    $(function() { // on dom ready
+      $('#cy').cytoscape({
+        maxZoom: 10,
+        minZoom: 0.25,
+        wheelSensitivity: 0.33,
+        style: cytoscape.stylesheet()
+          .selector('node')
+          .css({'content':          'data(name)',
+                'width':            'data(size)',
+                'height':           'data(size)',
+                'background-color': 'data(color)'})
+          .selector('edge')
+          .css({'target-arrow-shape': 'triangle',
+                'label':              'data(label)'})
+          .selector(':selected')
+          .css({'background-color':   'black',
+                'line-color':         'black',
+                'target-arrow-color': 'black',
+                'source-arrow-color': 'black'})
+          .selector('.autorotate')
+          .css({'edge-text-rotation': 'autorotate'})
+          .selector('.faded')
+          .css({'opacity':      0.25,
+                'text-opacity': 0}),
+        ready: function() { window.cy = this; setEvents();}
+      });
+
+      function setEvents(){
+        cy.on('tap', function(event) {
+          try{
+            var target = event.cyTarget;
+            if( target.isNode() ){
+              var neighborhood = target.neighborhood().add(target);
+              cy.elements().addClass('faded');
+              neighborhood.removeClass('faded');
+              $("#info").html(target.data("info")); }
+          }catch(err){  // If this fails, we know it's the backdrop
+            cy.elements().removeClass('faded');
+            $("#info").html(""); }
+        });
+        // Filters plugins
+        $('[id^=filter_').on('click', function(){
+          cy.batch(function(){
+            cy.nodes().forEach(function( n ){
+              n.css('visibility', 'visible');
+              $('input:checkbox[id^=filter_]:not(:checked)').each(function( i ){
+                var id_parts = $(this).attr('id').split("_");
+                var type  = id_parts[1];
+              var value = id_parts.slice(2).join("_");
+              if( n.data(type) === value ){ n.css('visibility', 'hidden'); }
+              })
+            })
+          })
+        })
+      }
+      
+      $("#add_intel").on('click', function(){
+        data = {intel: $('#intel').val(), type: $('#intel_type').val()}
+        $.getJSON("_quick_case/add_intel", data, function( data ) {
+          addIntel(data['nodes'], data['edges'])
+        });
+      });
+      $("#back").on('click', function(){location.href = "/"});
+      
+      function addIntel(nodes, edges){
+        items = []
+        $.each(nodes, function( i, node ){ items.push({group: 'nodes', data: node}) });
+        $.each(edges, function( i, edge ){ items.push({group: 'edges', data: node}) });
+        console.log(items)
+        cy.add(items);
+      }
+    }); // on dom ready
+  </script>
 {% endblock %}
 {% block content %}
   <!-- Sidebar -->
   <div id="sidebar">
+    <span id="back" class="glyphicon glyphicon-chevron-left"></span> <br /> <br />
     <!-- Case -->
     <div class="panel panel-default">
       <div class="panel-heading">
@@ -63,4 +139,16 @@
     <div id="cy"></div>
   </div>
   <!-- Body End -->
+  <!-- Footer -->
+  <div id="cyFooter">
+    <span id="cyFooterIcon" class="glyphicon glyphicon-chevron-right" data-toggle='toggle' data-target="#cyFooterText"></span>
+    <div id="cyFooterText" class="collapse horizontal">
+      <strong>Add intel</strong> <br />
+      <select id="intel_type">
+        {% for i in intel %} <option value="{{i}}">{{i|replace("INTEL_", "")|replace("_", " ")|title}}</option> {% endfor %}
+      </select>
+      <input id="intel" type="text" /> <button id="add_intel">Add</button>
+    </div>
+  </div>
+  <!-- Footer End -->
 {% endblock %}

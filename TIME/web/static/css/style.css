@@ -5,7 +5,7 @@ body{
   background: #EEEEEE;
 }
 #sidebar{
-  width: 200 px;
+  width: 200px;
   background: #606060;
   height: 100%;
   float: left;
@@ -22,8 +22,30 @@ body{
   position: center;
   position:absolute;
   top: 2%;
-  height: 100%;
-  width: 98%;
+  height: 98%;
+  width: calc(100% - 220px);
+}
+
+#cyFooter{
+  position: absolute;
+  bottom: 0px;
+  left: 215px;
+  height: 70px;
+  padding-left: 20px;
+  background: #606060;
+  padding: 5px;
+}
+
+#cyFooterText{
+  width: 0px;
+}
+
+#cyFooterText.in{
+  width: auto;
+}
+
+#cyFooterIcon{
+  float: right;
 }
 
 .legend{
