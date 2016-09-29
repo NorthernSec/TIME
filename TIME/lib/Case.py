@@ -40,7 +40,7 @@ class Case():
     self.nodes, self.edges = [], []
 
   def add_original_intel(self, intel, intel_type):
-    if not any(n.uid==intel and n.plugin==conf.NODE_ORIGINAL and
+    if not any(n.name==intel and n.plugin==conf.NODE_ORIGINAL and
                n.intel_type==intel_type for n in self.nodes):
       node = Node(str(uuid4()), conf.NODE_ORIGINAL, intel_type, intel, conf.NODE_ORIGINAL, 0)
       self.nodes.append(node)
@@ -49,7 +49,7 @@ class Case():
 
   def add_intel(self, node, edge):
     if not any(n.name==node.name and n.intel_type==node.intel_type and
-               n.info ==node.info  for n in self.nodes):
+               n.info==node.info  for n in self.nodes):
       self.nodes.append(node)
     else:
       matching = next((n for n in self.nodes if n.name==node.name and
@@ -68,8 +68,9 @@ class Case():
       edges = list(filter(None, [Edge.from_dict(node) for node in d.get('edges', [])]))
       case_id = d['case_id'] if 'case_id' in d else d['case_number']
       return self_class(case_id, d['title'], d['description'], d['notes'], d['recurse'], nodes, edges)
-    except:
-      None
+    except Exception as e:
+      print(e)
+      return None
 
 class Node():
   def __init__(self, uid, plugin, intel_type, name, label, depth,
@@ -95,10 +96,11 @@ class Node():
   @classmethod
   def from_dict(self_class, d):
     try:
-      return self_class(d['uuid'], d['plugin'], d['type'], d['name'],
-                        d['label'], d['recurse_depth'], d['size'],
-                        d['color'], d['x'], d['y'])
-    except:
+      return self_class(d['uid'], d['plugin'], d['intel_type'], d['name'],
+                        d['label'], d['recurse_depth'], d.get('size'),
+                        d.get('color'), d.get('info'), d.get('x'), d.get('y'))
+    except Exception as e:
+      print(e)
       return None
 
 class Edge():
@@ -110,6 +112,7 @@ class Edge():
   @classmethod
   def from_dict(self, d):
     try:
-      return Edge(d['source_id'], d['target_id'], d['label'])
-    except:
+      return Edge(d['source'], d['target'], d['label'])
+    except Exception as e:
+      print(e)
       return None
