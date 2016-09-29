@@ -28,7 +28,8 @@
           .selector('.faded')
           .css({'opacity':      0.25,
                 'text-opacity': 0}),
-        ready: function() { window.cy = this; setEvents();}
+        ready: function() { window.cy = this; setEvents();},
+        layout: {name: 'random', padding: 30, fit: true},
       });
 
       function setEvents(){
@@ -62,17 +63,37 @@
       
       $("#add_intel").on('click', function(){
         data = {intel: $('#intel').val(), type: $('#intel_type').val()}
+        $("body").css("cursor", "progress");
         $.getJSON("_quick_case/add_intel", data, function( data ) {
           addIntel(data['nodes'], data['edges'])
+          prepareLegend(data['labels'], data['plugins'], data['intel'])
+          console.log(data);
+          $("body").css("cursor", "default");
         });
       });
       $("#back").on('click', function(){location.href = "/"});
-      
+
+      function prepareLegend(labels, plugins, intel){
+        $("#plugins").empty();
+        $("#filters").empty();
+        $.each(plugins, function( i, p ){
+          data  = '<li> <input id="filter_plugin_'+p['name']+'" checked type="checkbox"> </input>';
+          data += '<span style="background-color: '+p['color']+'"></span>'+p['name']+'</li>';
+          $("#plugins").append(data);
+        });
+        $.each(labels, function( i, l ){
+          $("#filters").append('<li> <input id="filter_label_'+l+'" checked type="checkbox"> </input>'+l+'</li>');
+        });
+        setEvents();
+      }
+
       function addIntel(nodes, edges){
         items = []
-        $.each(nodes, function( i, node ){ items.push({group: 'nodes', data: node}) });
-        $.each(edges, function( i, edge ){ items.push({group: 'edges', data: node}) });
-        console.log(items)
+        $.each(nodes, function( i, node ){ node.id = node.uid; delete node.uid;
+                                           pos = {x: Math.floor(Math.random() * cy.width()),
+                                                  y: Math.floor(Math.random() * cy.height())}
+                                           items.push({group: 'nodes', data: node, position: pos }) });
+        $.each(edges, function( i, edge ){ items.push({group: 'edges', data: edge}) });
         cy.add(items);
       }
     }); // on dom ready
@@ -80,6 +101,7 @@
 {% endblock %}
 {% block content %}
   <!-- Sidebar -->
+  <div id="sidebar-container">
   <div id="sidebar">
     <span id="back" class="glyphicon glyphicon-chevron-left"></span> <br /> <br />
     <!-- Case -->
@@ -100,7 +122,7 @@
         <h3 class="panel-title">Legend</h3>
       </div>
       <div class="panel-body">
-        <ul class="legend">
+        <ul class="legend" id="plugins">
           {% for p in plugins %}
           <li>
             <input id="filter_plugin_{{p['plugin']}}" checked type="checkbox"> </input>  
@@ -116,7 +138,7 @@
         <h3 class="panel-title">Filters</h3>
       </div>
       <div class="panel-body">
-        <ul class="legend">
+        <ul class="legend" id="filters">
           {% for l in labels %}<li><input id="filter_label_{{l}}" checked type="checkbox"> </input>{{l}}</li>{% endfor %}
         </ul>
       </div>
@@ -133,6 +155,7 @@
     </div>
     <!-- End Legend -->
   </div>
+  </div>
   <!-- End Sidebar -->
   <!-- Content -->
   <div id="content">
@@ -145,7 +168,7 @@
     <div id="cyFooterText" class="collapse horizontal">
       <strong>Add intel</strong> <br />
       <select id="intel_type">
-        {% for i in intel %} <option value="{{i}}">{{i|replace("INTEL_", "")|replace("_", " ")|title}}</option> {% endfor %}
+        {% for i in intel %} <option value="{{i}}">{{i|replace("intel_", "")|replace("_", " ")|title}}</option> {% endfor %}
       </select>
       <input id="intel" type="text" /> <button id="add_intel">Add</button>
     </div>

@@ -5,11 +5,19 @@ body{
   background: #EEEEEE;
 }
 #sidebar{
-  width: 200px;
+  width: 220px;
   background: #606060;
   height: 100%;
-  float: left;
+  padding-right:28px;
+  overflow-y: scroll;
+}
+#sidebar-container{
+  width: 200px;
+  background: #606060;
   padding: 10px;
+  height: 100%;
+  float: left;
+  overflow: hidden;
 }
 
 #content{
@@ -50,6 +58,7 @@ body{
 
 .legend{
   list-style: none;
+  margin-left: -40px;
 }
 
 .legend span{
