@@ -84,6 +84,31 @@ def quick_case():
   return render_template("case.html", **data)
 
 
+@app.route('/_quick_case/add_intel', methods=['GET'])
+@login_required
+def _quick_case_add_intel():
+  if 'quick_case' not in session: return jsonify({'status': 'no_existing_quick_case'})
+  try:
+    intel     =request.args.get('intel', type=str)
+    intel_type=request.args.get('type',  type=str)
+    case          = Case.from_dict(session['quick_case'])
+    nodes,  edges = case.nodes[:], case.edges[:] # Take copy of lists for diff
+    case_manager.add_intel(case, intel, intel_type)
+    data = Visualizer._prepare(case)
+    data.pop("case")
+    # Get the diff in nodes & edges
+    data['nodes'] = [TK.to_dict(x) for x in case.nodes if x.uid in
+                      [x.uid for x in list(set(case.nodes) - set(nodes))]]
+    data['edges'] = [TK.to_dict(x) for x in case.edges if (x.source, x.target) in
+                      [(x.source, x.target) for x in list(set(case.edges) - set(edges))]]
+    session['quick_case'] = TK.to_dict(case)
+    data['status'] = 'success'
+    return jsonify(data)
+  except Exception as e:
+    print(e)
+    return jsonify({'status': 'quick_case_intel_add_error'})
+
+
 @app.route('/login', methods=['POST'])
 def login_check():
   # validate username and password

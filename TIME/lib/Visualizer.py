@@ -43,5 +43,5 @@ class Visualizer():
       node.label = node.label.title()
       node.info = markdown.markdown("\n".join(["# %s\n%s"%(x, node.info[x])
                                               for x in sorted(node.info.keys()) if node.info[x]]))
-    intel = [x for x in dir(conf) if x.startswith("INTEL_")]
+    intel = [x.lower() for x in dir(conf) if x.startswith("INTEL_")]
     return {'case': case, 'plugins': plugins, 'labels': labels, 'intel': intel}
