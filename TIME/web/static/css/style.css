@@ -7,7 +7,7 @@ body{
 #sidebar{
   width: 220px;
   background: #606060;
-  height: 100%;
+  height: calc(100% - 18px);
   padding-right:28px;
   overflow-y: scroll;
 }

@@ -9,7 +9,7 @@
         $('ul.menu-content li').removeClass("active");
         $(this).addClass("active");
         switch($(this).attr("id")){
-          case "quick_case":    location.href = "/quick_case"; break;
+          case "new_case":      location.href = "/new_case"; break;
           case "cases":         loading(".bodystrap", "/_cases", {}); break;
           case "user_settings": loading(".bodystrap", "/_user_settings", {}); break;
         }
@@ -22,7 +22,7 @@
     <div class="brand">Threat Intelligence Management &amp; Enrichment</div>
     <div class="menu-list">
       <ul id="menu-content" class="menu-content collapse out">
-        <li id="quick_case">          <span class="glyphicon glyphicon-file"></span> Quick case</li>
+        <li id="new_case">            <span class="glyphicon glyphicon-file"></span> {{ 'Continue new case' if existing_case else 'New case' }}</li>
         <li id="cases" class="active"><span class="glyphicon glyphicon-book"></span> Cases</li>
         <li id="user_settings">       <span class="glyphicon glyphicon-user"></span> User Settings</li>
       </ul>

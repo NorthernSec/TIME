@@ -1,3 +1,9 @@
+{% if is_new_case is defined %}
+  {% set case_link = '_new_case' %}
+{% else %}
+  {% set case_link = '_case' %}
+{% endif %}
+
 {% extends 'layouts/master-page' %}
 {% block title %}Quick Case{% endblock %}
 {% block head %}
@@ -29,7 +35,9 @@
           .css({'opacity':      0.25,
                 'text-opacity': 0}),
         ready: function() { window.cy = this; setEvents();},
-        layout: {name: 'random', padding: 30, fit: true},
+        layout: {name: 'preset'},
+        elements:{nodes: [{% for n in case.nodes %}{data: {id: "{{n.uid}}", plugin: "{{n.plugin}}", name: `{{n.name}}`, size: {{n.size}}, color: "{{n.color}}", label: `{{n.label}}`, info: `{{n.info|safe}}`}, position: {x: {{n.x}}, y: {{n.y}}}},{% endfor %}],
+                  edges: [{% for e in case.edges %}{data: {source: "{{e.source}}", target: "{{e.target}}", label: "{{e.label}}"}, classes: "autorotate"},{% endfor %}]},
       });
 
       function setEvents(){
@@ -64,11 +72,12 @@
       $("#add_intel").on('click', function(){
         data = {intel: $('#intel').val(), type: $('#intel_type').val()}
         $("body").css("cursor", "progress");
-        $.getJSON("_quick_case/add_intel", data, function( data ) {
+        $("#case-status").text("gathering new intel...")
+        $.getJSON("{{case_link}}/add_intel", data, function( data ) {
           addIntel(data['nodes'], data['edges'])
           prepareLegend(data['labels'], data['plugins'], data['intel'])
-          console.log(data);
           $("body").css("cursor", "default");
+          $("#case-status").text("ready")
         });
       });
       $("#back").on('click', function(){location.href = "/"});
@@ -95,66 +104,82 @@
                                            items.push({group: 'nodes', data: node, position: pos }) });
         $.each(edges, function( i, edge ){ items.push({group: 'edges', data: edge}) });
         cy.add(items);
+        nodes = []
+        cy.nodes().forEach(function( n ){nodes.push({uid: n.data("id"), x: n.position("x"),
+                                                                         y: n.position("y")})})
+        $.getJSON("{{case_link}}/set_node_positions", {nodes: JSON.stringify(nodes)}, function( data ) {})
       }
+
+      $("#cancel_case").on('click', function(){ $.getJSON("{{case_link}}/cancel", {}, function(data){}) })
+
+      {% if is_new_case is not defined %}
+      $("#save_case").on('click', function(){
+
+      })
+
+      {% endif %}
     }); // on dom ready
   </script>
 {% endblock %}
 {% block content %}
   <!-- Sidebar -->
   <div id="sidebar-container">
-  <div id="sidebar">
-    <span id="back" class="glyphicon glyphicon-chevron-left"></span> <br /> <br />
-    <!-- Case -->
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title">Case</h3>
+    <div id="sidebar">
+      <span id="back" class="glyphicon glyphicon-chevron-left"></span> <br /> <br />
+      <!-- Case -->
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Case</h3>
+        </div>
+        <div class="panel-body">
+          <h3>{{case.title}}</h3>
+          <strong>{{case.description}}</strong>
+          <p>{{case.notes}}</p>
+        </div>
       </div>
-      <div class="panel-body">
-        <h3>{{case.title}}</h3>
-        <strong>{{case.description}}</strong>
-        <p>{{case.notes}}</p>
+      <!-- End Case -->
+      <!-- Legend -->
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Legend</h3>
+        </div>
+        <div class="panel-body">
+          <ul class="legend" id="plugins">
+            {% for p in plugins %}
+            <li>
+              <input id="filter_plugin_{{p['name']}}" checked type="checkbox"> </input>
+              <span style="background-color: {{ p['color'] }}"></span>{{ p['name'] }}
+            </li>{% endfor %}
+          </ul>
+        </div>
       </div>
+      <!-- End Legend -->
+      <!-- Filters  -->
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Filters</h3>
+        </div>
+        <div class="panel-body">
+          <ul class="legend" id="filters">
+            {% for l in labels %}<li><input id="filter_label_{{l}}" checked type="checkbox"> </input>{{l}}</li>{% endfor %}
+          </ul>
+        </div>
+      </div>
+      <!-- End Filters -->
+      <!-- Legend -->
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Aditional Info</h3>
+        </div>
+        <div class="panel-body">
+          <div id="info"> </div>
+        </div>
+      </div>
+      <!-- End Legend -->
+      <button id="save_case">Save</button>
+      <button id="cancel_case">Cancel</button>
     </div>
-    <!-- End Case -->
-    <!-- Legend -->
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title">Legend</h3>
-      </div>
-      <div class="panel-body">
-        <ul class="legend" id="plugins">
-          {% for p in plugins %}
-          <li>
-            <input id="filter_plugin_{{p['plugin']}}" checked type="checkbox"> </input>  
-            <span style="background-color: {{ p['color'] }}"></span>{{ p['plugin'] }}
-          </li>{% endfor %}
-        </ul>
-      </div>
-    </div>
-    <!-- End Legend -->
-    <!-- Filters  -->
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title">Filters</h3>
-      </div>
-      <div class="panel-body">
-        <ul class="legend" id="filters">
-          {% for l in labels %}<li><input id="filter_label_{{l}}" checked type="checkbox"> </input>{{l}}</li>{% endfor %}
-        </ul>
-      </div>
-    </div>
-    <!-- End Filters -->
-    <!-- Legend -->
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title">Aditional Info</h3>
-      </div>
-      <div class="panel-body">
-        <div id="info"> </div>
-      </div>
-    </div>
-    <!-- End Legend -->
-  </div>
+    <span>Status:</span> <span id="case-status">ready</span>
   </div>
   <!-- End Sidebar -->
   <!-- Content -->
