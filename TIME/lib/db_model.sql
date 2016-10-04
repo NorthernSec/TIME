@@ -6,9 +6,9 @@ CREATE TABLE IF NOT EXISTS Cases (
   Recurse      INT     NOT NULL  DEFAULT 2);
 
 CREATE TABLE IF NOT EXISTS Snapshots (
-  SnapShot_ID    SERIAL       PRIMARY KEY,
-  Case_ID        INT          NOT NULL,
-  Snapshot_time  TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  SnapShot_ID    SERIAL     PRIMARY KEY,
+  Case_ID        INT        NOT NULL,
+  Snapshot_time  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   CONSTRAINT fk_Case
     FOREIGN KEY (Case_ID)
@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS Plugins (
   Name       TEXT    NOT NULL  UNIQUE,
   Color      TEXT    NOT NULL,
   Size       INT     NOT NULL  DEFAULT 30);
+
+CREATE TABLE IF NOT EXISTS Intel_Types(
+  Intel_ID    SERIAL  PRIMARY KEY,
+  Intel_Type  TEXT    NOT NULL  UNIQUE);
 
 CREATE TABLE IF NOT EXISTS Nodes (
   SnapShot_ID    INT    NOT NULL,
@@ -45,6 +49,11 @@ CREATE TABLE IF NOT EXISTS Nodes (
   CONSTRAINT fk_Plugin
     FOREIGN KEY (Plugin)
     REFERENCES Plugins (Plugin_ID)
+    ON DELETE RESTRICT
+    ON UPDATE RESTRICT,
+  CONSTRAINT fk_intel_type
+    FOREIGN KEY (Type_ID)
+    REFERENCES Intel_Types (Intel_ID)
     ON DELETE RESTRICT
     ON UPDATE RESTRICT);
 

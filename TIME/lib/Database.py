@@ -21,6 +21,7 @@ class PostgresDatabase():
     if not self.db: raise(Exception)
     self.cur = self.db.cursor(cursor_factory = psycopg2.extras.RealDictCursor)
 
+
   def add_plugin(self, plugin, color, size = 30):
     self.cur.execute("""INSERT INTO Plugins(Name, Color, Size)
                         SELECT %s, %s, %s
@@ -29,16 +30,85 @@ class PostgresDatabase():
                         (plugin, color, size, plugin))
     self.db.commit()
 
+
+  def add_case(self, title, descr, notes, recurse):
+    self.cur.execute("""INSERT INTO Cases(Title, Description, Notes, Recurse)
+                        VALUES(%s, %s, %s, %s) RETURNING Case_ID;""",
+                        (title, descr, notes, recurse))
+    self.db.commit()
+    return self.cur.fetchone()["case_id"]
+
+
+  def create_new_snapshot(self, case_id, snapshot_time):
+    self.cur.execute("""INSERT INTO Snapshots(Case_ID, Snapshot_time)
+                        VALUES(%s, %s) RETURNING Snapshot_ID;""",
+                        (case_id, snapshot_time))
+    self.db.commit()
+    return self.cur.fetchone()["snapshot_id"]
+
+
+  def add_intel_type(self, intel_type):
+    self.cur.execute("""WITH x as (
+                          SELECT Intel_ID
+                          FROM Intel_Types
+                          Where Intel_Type = %s
+                        ), y as (
+                          INSERT INTO Intel_Types(Intel_Type)
+                          SELECT %s
+                          WHERE NOT EXISTS (SELECT 1 from x)
+                          RETURNING Intel_ID)
+                        SELECT Intel_ID  FROM x
+                        UNION ALL
+                        SELECT Intel_ID  FROM y""", (intel_type, intel_type))
+    self.db.commit()
+    return self.cur.fetchone()["intel_id"]
+
+
+  def add_node(self, snapshot_id, uid, plugin, intel_id, name, label,
+                     recurse_depth, size, color, x, y):
+    self.cur.execute("""INSERT INTO Nodes(Snapshot_ID, UUID, Plugin, Type_ID,
+                          Name, Label, Recurse_Depth, Size, Color, X, Y)
+                        SELECT %s, %s, Plugin_ID, %s, %s, %s, %s, %s, %s, %s, %s
+                          FROM Plugins
+                          WHERE Name = %s;""",
+                        (snapshot_id, uid, intel_id, name, label,
+                         recurse_depth, size, color, x, y, plugin))
+    self.db.commit()
+
+
+  def add_edge(self, snapshot_id, source, target, label):
+    self.cur.execute("""INSERT INTO Edges(Snapshot_ID, Source_ID, Target_ID, label
+                        VALUES(%s, %s, %s, %s);""",
+                        (snapshot_id, source, target, label))
+    self.db.commit()
+
+
+  def add_node_info(self, node_id, plugin, info):
+    self.cur.execute("""INSERT INTO Node_Plugin_Info(Node_UUID, Plugin_ID, Info)
+                        SELECT %s, Plugin_ID, %s
+                          FROM Plugins
+                          WHERE Name = %s;""",
+                        (node_id, info, plugin))
+    self.db.commit()
+
+
   def get_plugins(self, plugin=None):
     statement = "SELECT * FROM Plugins"
     if plugin: statement += " WHERE Name = %s"
     self.cur.execute(statement, (plugin,))
     return self.cur.fetchall()
 
+
+  def get_teams(self):
+    self.cur.execute("SELECT * FROM Teams")
+    return self.cur.fetchall()
+
+
   def get_user(self, username):
     self.cur.execute("""SELECT * FROM Users
                         WHERE Username = %s LIMIT 1;""", (username,))
     return self.cur.fetchall()
+
 
   def teams_for_user(self, username):
     self.cur.execute("""SELECT * FROM Teams
@@ -49,6 +119,7 @@ class PostgresDatabase():
                             WHERE Username = %s));""", (username,))
     return self.cur.fetchall()
 
+
   def cases_for_team(self, team):
     self.cur.execute("""SELECT * FROM Cases
                         WHERE Case_ID IN(
@@ -57,6 +128,12 @@ class PostgresDatabase():
                             SELECT Team_ID FROM Teams
                             WHERE Name = %s));""", (team,))
     return self.cur.fetchall()
+
+
+  def get_case(self, case_number):
+    self.cur.execute("""SELECT * FROM Cases WHERE Case_ID = %s;""", (case_number,))
+    return self.cur.fetchall()
+
 
 class SQLITEDatabase():
   def __init__(self):
@@ -69,6 +146,7 @@ class SQLITEDatabase():
       self.cur = self.db.cursor()
 
       db_struct = open(os.path.join(lib, "db_model.sql")).read()
+      db_struct = db_struct.replace("SERIAL", "INTEGER")
       for s in db_struct.split(";"): self.cur.execute(s+";")
       if make_data:
         db_data   = open(os.path.join(lib, "db_data.sql")).read()
@@ -76,17 +154,73 @@ class SQLITEDatabase():
     except Exception as e:
       sys.exit("Could not create sqlite DB: %s"%e)
 
+
   def add_plugin(self, plugin, color, size = 30):
-    self.cur.execute("""INSERT INTO Plugins(Name, Color, Size)
+    self.cur.execute("""INSERT OR IGNORE INTO Plugins(Name, Color, Size)
                         Values(?, ?, ?);""", (plugin, color, size))
     self.db.commit()
+
+
+  def add_case(self, title, descr, notes, recurse):
+    self.cur.execute("""INSERT INTO Cases(Title, Description, Notes, Recurse)
+                        VALUES(?, ?, ?, ?);""", (title, descr, notes, recurse))
+    self.db.commit()
+    return self.cur.lastrowid
+
+
+  def create_new_snapshot(self, case_id, snapshot_time):
+    self.cur.execute("""INSERT INTO Snapshots(Case_ID, Snapshot_time)
+                        VALUES(?, ?);""", (case_id, snapshot_time))
+    self.db.commit()
+    return self.cur.lastrowid
+
+
+  def add_intel_type(self, intel_type):
+    self.cur.execute("""INSERT OR IGNORE INTO Intel_Types (Intel_Type)
+                        VALUES(?)""", (intel_type,))
+    self.db.commit()
+    row = self._selectAllFrom("Intel_Types", ("Intel_Type = ?", intel_type), 1)
+    return row[0]["intel_id"]
+
+
+  def add_node(self, snapshot_id, uid, plugin, intel_id, name, label,
+                     recurse_depth, size, color, x, y):
+    self.cur.execute("""INSERT INTO Nodes(Snapshot_ID, UUID, Plugin, Type_ID,
+                          Name, Label, Recurse_Depth, Size, Color, X, Y)
+                        SELECT ?, ?, Plugin_ID, ?, ?, ?, ?, ?, ?, ?, ?
+                          FROM Plugins
+                          WHERE Name = ?;""",
+                        (snapshot_id, uid, intel_id, name, label,
+                         recurse_depth, size, color, x, y, plugin))
+    self.db.commit()
+
+
+  def add_edge(self, snapshot_id, source, target, label):
+    self.cur.execute("""INSERT INTO Edges(Snapshot_ID, Source_ID, Target_ID, label
+                        VALUES(?, ?, ?, ?);""", (snapshot_id, source, target, label))
+    self.db.commit()
+
+
+  def add_node_info(self, node_id, plugin, info):
+    self.cur.execute("""INSERT INTO Node_Plugin_Info(Node_UUID, Plugin_ID, Info)
+                        SELECT ?, Plugin_ID, ?
+                          FROM Plugins
+                          WHERE Name = ?;""", (node_id, info, plugin))
+    self.db.commit()
+
 
   def get_plugins(self, plugin=None):
     where = ("Name = ?", plugin) if plugin else None
     return self._selectAllFrom("Plugins", where)
 
+
   def get_user(self, username):
     return self._selectAllFrom("Users", ("username = ?", username), 1)
+
+
+  def get_teams(self):
+    return self._selectAllFrom("Teams")
+
 
   def teams_for_user(self, username):
     wh = """Team_ID IN(
@@ -94,11 +228,16 @@ class SQLITEDatabase():
                 SELECT User_ID FROM Users WHERE Username = ?))"""
     return self._selectAllFrom("Teams", (wh, username))
 
+
   def cases_for_team(self, team):
     wh = """Case_ID IN(
               SELECT Case_ID FROM Case_Access WHERE Team_ID IN(
                 SELECT Team_ID FROM Teams WHERE Name = ?))"""
     return self._selectAllFrom("Cases", (wh, team))
+
+
+  def get_case(self, case_number):
+    return self._selectAllFrom("Cases", ("Case_ID = ?", case_number), 1)
 
 
   def _selectAllFrom(self, table, where=None, limit=None):

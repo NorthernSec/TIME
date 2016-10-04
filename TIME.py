@@ -11,6 +11,7 @@
 import json
 import os
 import random
+import traceback
 
 from flask       import Flask, render_template, request, jsonify, session, abort
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
@@ -63,7 +64,7 @@ def login_check(funct):
 @app.route('/')
 @login_check
 def index():
-  return render_template('index.html', existing_case = ('new_case' in session))
+  return render_template('index.html', existing_case = (session.get('new_case', None)))
 
 
 @app.route('/_user_settings', methods=['POST'])
@@ -79,15 +80,6 @@ def _cases():
   return render_template("subpages/index_cases.html", Cases=cases)
 
 
-@app.route('/new_case', methods=['GET'])
-@login_check
-def new_case():
-  if 'new_case' not in session:
-    session['new_case'] = TK.to_dict(Case(title="New Case"))
-  data = Visualizer._prepare(Case.from_dict(session['new_case']))
-  return render_template("case.html", is_new_case=True, **data)
-
-
 @app.route('/case/<int:i>', methods=['GET'])
 @login_check
 def case(i):
@@ -98,6 +90,15 @@ def case(i):
   case = Case.from_dict(case)
   data = Visualizer._prepare(case)
   return render_template("case.html", **data)
+
+
+@app.route('/new_case', methods=['GET'])
+@login_check
+def new_case():
+  if not session.get('new_case', None):
+    session['new_case'] = TK.to_dict(Case(title="New Case"))
+  data = Visualizer._prepare(Case.from_dict(session['new_case']))
+  return render_template("case.html", is_new_case=True, **data)
 
 
 @app.route('/_new_case/add_intel', methods=['GET'])
@@ -137,6 +138,26 @@ def _new_case_set_node_positions():
     return jsonify({'status': 'success'})
   except Exception as e:
     return jsonify({'status': 'error'})
+
+
+@app.route('/_new_case/cancel', methods=['GET'])
+@login_check
+def _new_case_cancel():
+  session['new_case'] = None
+  return jsonify({'status': 'success'})
+
+
+@app.route('/_new_case/save', methods=['GET'])
+@login_check
+def _new_case_save():
+  try:
+    case = db.add_case(Case.from_dict(session['new_case']))
+    session['new_case'] = None
+    return jsonify({'status': 'success', 'case': case.case_number})
+  except Exception as e:
+    print(e)
+    print(traceback.format_exc())
+    return jsonify({'status': 'Error'})
 
 
 @app.route('/login', methods=['POST'])
