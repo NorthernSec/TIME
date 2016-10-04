@@ -21,6 +21,7 @@
     <script type="text/javascript" src="/static/js/jquery.min.js"></script>
     <script type="text/javascript" src="/static/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="/static/js/custom/scripts.js"></script>
+    <script type="text/javascript" src="/static/js/statusses.js"></script>
 
     <title>{% block title %}{% endblock %} - TIME</title>
     {% block head %}{% endblock %}
