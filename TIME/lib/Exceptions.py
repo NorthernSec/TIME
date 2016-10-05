@@ -17,3 +17,10 @@ class InvalidCase(WebException):
   def __init__(self, *args, **kwargs):
     WebException.__init__(self, *args, **kwargs)
 
+class InvalidSyntax(WebException):
+  def __init__(self, *args, **kwargs):
+    WebException.__init__(self, *args, **kwargs)
+
+class CaseNotLoaded(WebException):
+  def __init__(self, *args, **kwargs):
+    WebException.__init__(self, *args, **kwargs)

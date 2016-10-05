@@ -21,7 +21,7 @@ from TIME.lib.Authentication import AuthenticationHandler
 from TIME.lib.Case           import Case
 from TIME.lib.CaseManager    import CaseManager
 from TIME.lib.Config         import Configuration as conf
-from TIME.lib.Exceptions     import InvalidCase
+from TIME.lib.Exceptions     import InvalidCase, InvalidSyntax, CaseNotLoaded
 from TIME.lib.PluginManager  import PluginManager
 from TIME.lib.User           import User
 from TIME.lib.Visualizer     import Visualizer
@@ -43,6 +43,8 @@ case_manager = CaseManager()
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+
+# Decorators
 @login_manager.user_loader
 def load_user(id):
   return User.get(id, auth_handler)
@@ -58,6 +60,15 @@ def login_check(funct):
         login_user(person)
     return funct(*args, **kwargs)
   return wrapper
+
+
+# Functions
+def verifyCaseSyntax(case_type, JSON=True):
+  if case_type not in ['new_case', 'current_case']:
+    raise(InvalidSyntax('Case Type does not exist', json=JSON))
+  if not session.get(case_type, None):
+    raise(CaseNotLoaded('No case with this type loaded', json=JSON,
+                         payload={'caseType': case_type}))
 
 
 # routes
@@ -87,7 +98,6 @@ def case(i):
   if not case: raise InvalidCase('No case with this number exists')
   if i not in [x.case_number for x in db.get_cases_accessible_by_user(current_user.id)]:
     abort(403)
-  case = Case.from_dict(case)
   data = Visualizer._prepare(case)
   return render_template("case.html", **data)
 
@@ -101,14 +111,14 @@ def new_case():
   return render_template("case.html", is_new_case=True, **data)
 
 
-@app.route('/_new_case/add_intel', methods=['GET'])
+@app.route('/_add_intel/<case_type>', methods=['GET'])
 @login_check
-def _new_case_add_intel():
-  if 'new_case' not in session: return jsonify({'status': 'no_existing_new_case'})
+def _case_add_intel(case_type):
+  verifyCaseSyntax(case_type)
   try:
     intel     =request.args.get('intel', type=str)
     intel_type=request.args.get('type',  type=str)
-    case          = Case.from_dict(session['new_case'])
+    case          = Case.from_dict(session[case_type])
     nodes,  edges = case.nodes[:], case.edges[:] # Take copy of lists for diff
     case_manager.add_intel(case, intel, intel_type)
     data = Visualizer._prepare(case)
@@ -118,7 +128,7 @@ def _new_case_add_intel():
                       [x.uid for x in list(set(case.nodes) - set(nodes))]]
     data['edges'] = [TK.to_dict(x) for x in case.edges if (x.source, x.target) in
                       [(x.source, x.target) for x in list(set(case.edges) - set(edges))]]
-    session['new_case'] = TK.to_dict(case)
+    session[case_type] = TK.to_dict(case)
     data['status'] = 'success'
     return jsonify(data)
   except Exception as e:
@@ -126,13 +136,14 @@ def _new_case_add_intel():
     return jsonify({'status': 'new_case_intel_add_error'})
 
 
-@app.route('/_new_case/set_node_positions', methods=['GET'])
+@app.route('/set_node_positions/<case_type>', methods=['GET'])
 @login_check
-def _new_case_set_node_positions():
+def _case_set_node_positions(case_type):
+  verifyCaseSyntax(case_type)
   try:
     nodes = json.loads(request.args.get('nodes', type=str))
     nodes = {x['uid']: {'x': x['x'], 'y': x['y']} for x in nodes}
-    for node in session['new_case']['nodes']:
+    for node in session[case_type]['nodes']:
       node['x']=nodes.get(node['uid'], {}).get('x', 0)
       node['y']=nodes.get(node['uid'], {}).get('y', 0)
     return jsonify({'status': 'success'})
@@ -140,20 +151,24 @@ def _new_case_set_node_positions():
     return jsonify({'status': 'error'})
 
 
-@app.route('/_new_case/cancel', methods=['GET'])
+@app.route('/cancel/<case_type>', methods=['GET'])
 @login_check
-def _new_case_cancel():
-  session['new_case'] = None
+def _case_cancel(case_type):
+  session[case_type] = None
   return jsonify({'status': 'success'})
 
 
-@app.route('/_new_case/save', methods=['GET'])
+@app.route('/save/<case_type>', methods=['GET'])
 @login_check
-def _new_case_save():
+def _case_save(case_type):
+  verifyCaseSyntax(case_type)
   try:
-    case = db.add_case(Case.from_dict(session['new_case']))
-    session['new_case'] = None
-    return jsonify({'status': 'success', 'case': case.case_number})
+    if case_type == 'new_case':
+      case = db.add_case(Case.from_dict(session['new_case']))
+      session['new_case'] = None
+      return jsonify({'status': 'success', 'case': case.case_number})
+    else:
+      return jsonify({'status': 'success'})
   except Exception as e:
     print(e)
     print(traceback.format_exc())
@@ -185,6 +200,11 @@ def test():
 # Error handling
 @app.errorhandler(InvalidCase)
 def invalid_case_error(error):
+  return render_error(error)
+
+
+@app.errorhandler(InvalidSyntax)
+def invalid_syntax_error(error):
   return render_error(error)
 
 
