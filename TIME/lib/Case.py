@@ -96,10 +96,12 @@ class Node():
   @classmethod
   def from_dict(self_class, d):
     try:
-      return self_class(d['uid'], d['plugin'], d['intel_type'], d['name'],
+      uid = d['uid'] if 'uid' in d else d['uuid']
+      return self_class(uid, d['plugin'], d['intel_type'], d['name'],
                         d['label'], d['recurse_depth'], d.get('size'),
                         d.get('color'), d.get('info'), d.get('x'), d.get('y'))
     except Exception as e:
+      print(d)
       print(e)
       return None
 
@@ -112,7 +114,9 @@ class Edge():
   @classmethod
   def from_dict(self, d):
     try:
-      return Edge(d['source'], d['target'], d['label'])
+      source = d['source'] if 'source' in d else d['source_id']
+      target = d['target'] if 'target' in d else d['target_id']
+      return Edge(source, target, d['label'])
     except Exception as e:
       print(e)
       return None
