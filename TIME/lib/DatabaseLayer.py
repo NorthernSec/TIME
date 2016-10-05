@@ -68,8 +68,8 @@ def add_node_info(node, plugin, info):
 
 def get_plugins(plugin=None):
   data = db.get_plugins(plugin)
-  if plugin: data = data[0] if len(data) is 1 else None
-  return data if data else []
+  if plugin is not None: data = data[0] if len(data) is 1 else None
+  return data if data or plugin else []
 
 
 def user_exists(username):
@@ -105,4 +105,36 @@ def get_cases_accessible_by_user(username):
 
 def get_case(case_number):
   data = db.get_case(case_number)
-  return data[0] if data else None
+  if data:
+    case = Case.from_dict(data[0])
+    snapshots = sorted(get_snapshots(case), key=lambda k: k['snapshot_time'])
+    if snapshots:
+      snapshot_id = snapshots[0]['snapshot_id']
+      case.nodes = get_nodes_for_snapshot(snapshot_id)
+      case.edges = get_edges_for_snapshot(snapshot_id)
+    return case
+  else: return None
+
+
+def get_snapshots(case):
+  return db.get_snapshots(case.case_number)
+
+
+def get_nodes_for_snapshot(snapshot_id):
+  nodes = []
+  for x in db.get_nodes_for_snapshot(snapshot_id):
+    x['intel_type'] = get_intel_types(x['type_id'])['intel_type']
+    plugin = {x['plugin_id']: x['name'] for x in get_plugins()}
+    x['plugin'] =  plugin[x['plugin_id']]
+    nodes.append(Node.from_dict(x))
+  return nodes
+
+
+def get_edges_for_snapshot(snapshot_id):
+  return [Edge.from_dict(x) for x in db.get_edges_for_snapshot(snapshot_id)]
+
+
+def get_intel_types(intel_id = None):
+  data = db.get_intel_types(intel_id)
+  if intel_id is not None: data = data[0] if len(data) is 1 else None
+  return data if data or intel_id else []

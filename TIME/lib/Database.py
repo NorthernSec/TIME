@@ -135,6 +135,29 @@ class PostgresDatabase():
     return self.cur.fetchall()
 
 
+  def get_snapshots(self, case_number):
+    self.cur.execute("""SELECT * FROM Snapshots WHERE Case_ID = %s;""", (case_number,))
+    return self.cur.fetchall()
+
+
+  def get_nodes_for_snapshot(self, snapshot_id):
+    self.cur.execute("""SELECT * FROM Nodes WHERE Snapshot_ID = %s;""", (snapshot_id,))
+    return self.cur.fetchall()
+
+
+  def get_edges_for_snapshot(self, snapshot_id):
+    self.cur.execute("""SELECT * FROM Edges WHERE Snapshot_ID = %s;""", (snapshot_id,))
+    return self.cur.fetchall()
+
+
+  def get_intel_types(self, intel_id = None):
+    statement = "SELECT * FROM Intel_Types"
+    if intel_id: statement += " WHERE Intel_ID = %s"
+    self.cur.execute(statement, (intel_id,))
+    return self.cur.fetchall()
+
+
+# Backup database
 class SQLITEDatabase():
   def __init__(self):
     import TIME.lib as lib
@@ -238,6 +261,23 @@ class SQLITEDatabase():
 
   def get_case(self, case_number):
     return self._selectAllFrom("Cases", ("Case_ID = ?", case_number), 1)
+
+
+  def get_snapshots(self, case_number):
+    return self._selectAllFrom("Snapshots", ("Case_ID = ?", case_number))
+
+
+  def get_nodes_for_snapshot(self, snapshot_id):
+    return self._selectAllFrom("Nodes", ("Snapshot_ID = ?", snapshot_id))
+
+
+  def get_edges_for_snapshot(self, snapshot_id):
+    return self._selectAllFrom("Edges", ("Snapshot_ID = ?", snapshot_id))
+
+
+  def get_intel_types(self, intel_id = None):
+    where = ("Intel_ID = ?", intel_id) if intel_id else None
+    return self._selectAllFrom("Intel_Types", where)
 
 
   def _selectAllFrom(self, table, where=None, limit=None):
