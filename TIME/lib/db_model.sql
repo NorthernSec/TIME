@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS Intel_Types(
 CREATE TABLE IF NOT EXISTS Nodes (
   SnapShot_ID    INT    NOT NULL,
   UUID           TEXT   NOT NULL,
-  Plugin         INT    NOT NULL,
+  Plugin_ID      INT    NOT NULL,
   Type_ID        INT    NOT NULL,
   Name           TEXT   NOT NULL,
   Label          TEXT   NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS Nodes (
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT fk_Plugin
-    FOREIGN KEY (Plugin)
+    FOREIGN KEY (Plugin_ID)
     REFERENCES Plugins (Plugin_ID)
     ON DELETE RESTRICT
     ON UPDATE RESTRICT,

@@ -2,7 +2,7 @@ CREATE INDEX fk_Team_idx       ON Users_In_Teams (Team_ID);
 CREATE INDEX fk_nodeplugin_idx ON Node_Plugin_Info (Plugin_ID);
 CREATE INDEX fk_source_idx     ON Edges (Source_ID);
 CREATE INDEX fk_target_idx     ON Edges (Target_ID);
-CREATE INDEX fk_Plugin_idx     ON Nodes (Plugin);
+CREATE INDEX fk_Plugin_idx     ON Nodes (Plugin_ID);
 CREATE INDEX fk_Case_Team_idx  ON Case_Access (Team_ID);
 
 INSERT INTO Teams          VALUES(0, 'TIME');
