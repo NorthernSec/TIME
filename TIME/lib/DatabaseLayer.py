@@ -42,6 +42,12 @@ def add_case(case):
   return case
 
 
+def update_case(case):
+  snapshot_id = create_new_snapshot(case)
+  for node in case.nodes: add_node(snapshot_id, node)
+  for edge in case.edges: add_edge(snapshot_id, edge)
+
+
 def create_new_snapshot(case):
   return db.create_new_snapshot(case.case_number, datetime.now())
 
@@ -55,15 +61,15 @@ def add_node(snapshot_id, node):
   db.add_node(snapshot_id, node.uid, node.plugin, intel_id, node.name,
               node.label, node.recurse_depth, node.size, node.color, node.x, node.y)
   for plugin in node.info.keys():
-    if node.info[plugin]: add_node_info(node, plugin, node.info[plugin])
+    if node.info[plugin]: add_node_info(snapshot_id, node, plugin, node.info[plugin])
 
 
 def add_edge(snapshot_id, edge):
   db.add_edge(snapshot_id, edge.source, edge.target, edge.label)
 
 
-def add_node_info(node, plugin, info):
-  db.add_node_info(self, node.uid, plugin, info)
+def add_node_info(snapshot_id, node, plugin, info):
+  db.add_node_info(snapshot_id, node.uid, plugin, info)
 
 
 def get_plugins(plugin=None):
@@ -109,7 +115,7 @@ def get_case(case_number):
     case = Case.from_dict(data[0])
     snapshots = sorted(get_snapshots(case), key=lambda k: k['snapshot_time'])
     if snapshots:
-      snapshot_id = snapshots[0]['snapshot_id']
+      snapshot_id = snapshots[-1]['snapshot_id']
       case.nodes = get_nodes_for_snapshot(snapshot_id)
       case.edges = get_edges_for_snapshot(snapshot_id)
     return case
@@ -138,3 +144,16 @@ def get_intel_types(intel_id = None):
   data = db.get_intel_types(intel_id)
   if intel_id is not None: data = data[0] if len(data) is 1 else None
   return data if data or intel_id else []
+
+
+def get_access_rights_for_case(case):
+  rights = [x['team_id'] for x in db.get_access_rights_for_case(case.case_number)]
+  return [x for x in get_teams() if x['team_id'] in rights]
+
+
+def set_access(case, rights):
+  current = [x['name'] for x in get_access_rights_for_case(case)]
+  for team in (set(rights)-set(current)): # set represents teams to add
+    db.add_access_right_to_case(case.case_number, team)
+  for team in (set(current)-set(rights)): # set represents teams to remove
+    db.remove_access_right_from_case(case.case_number, team)

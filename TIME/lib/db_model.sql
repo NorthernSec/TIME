@@ -40,7 +40,6 @@ CREATE TABLE IF NOT EXISTS Nodes (
   y              FLOAT      NULL,
 
   PRIMARY KEY (SnapShot_ID, UUID),
-  CONSTRAINT UUID_UNIQUE UNIQUE  (UUID),
   CONSTRAINT fk_Snapshot
     FOREIGN KEY (SnapShot_ID)
     REFERENCES Snapshots (SnapShot_ID)
@@ -65,15 +64,14 @@ CREATE TABLE IF NOT EXISTS Edges (
   Label        TEXT  NOT NULL,
 
   PRIMARY KEY (SnapShot_ID, Source_ID, Target_ID),
-  CONSTRAINT idEdge_UNIQUE UNIQUE  (SnapShot_ID),
   CONSTRAINT fk_source
-    FOREIGN KEY (Source_ID)
-    REFERENCES Nodes (UUID)
+    FOREIGN KEY (SnapShot_ID, Source_ID)
+    REFERENCES Nodes (SnapShot_ID, UUID)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT fk_target
-    FOREIGN KEY (Target_ID)
-    REFERENCES Nodes (UUID)
+    FOREIGN KEY (SnapShot_ID, Target_ID)
+    REFERENCES Nodes (SnapShot_ID, UUID)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT fk_ID
@@ -83,13 +81,15 @@ CREATE TABLE IF NOT EXISTS Edges (
     ON UPDATE NO ACTION);
 
 CREATE TABLE IF NOT EXISTS Node_Plugin_Info (
-  Node_UUID  TEXT  PRIMARY KEY,
-  Plugin_ID  INT   NOT NULL,
-  Info       TEXT      NULL,
+  Snapshot_ID  Int   NOT NULL,
+  Node_UUID    TEXT  NOT NULL,
+  Plugin_ID    INT   NOT NULL,
+  Info         TEXT      NULL,
 
+  PRIMARY KEY (SnapShot_ID, Node_UUID, Plugin_ID),
   CONSTRAINT fk_node
-    FOREIGN KEY (Node_UUID)
-    REFERENCES Nodes (UUID)
+    FOREIGN KEY (Snapshot_ID, Node_UUID)
+    REFERENCES Nodes (Snapshot_ID, UUID)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT fk_plugin

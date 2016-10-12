@@ -66,7 +66,7 @@ class PostgresDatabase():
 
   def add_node(self, snapshot_id, uid, plugin, intel_id, name, label,
                      recurse_depth, size, color, x, y):
-    self.cur.execute("""INSERT INTO Nodes(Snapshot_ID, UUID, Plugin, Type_ID,
+    self.cur.execute("""INSERT INTO Nodes(Snapshot_ID, UUID, Plugin_ID, Type_ID,
                           Name, Label, Recurse_Depth, Size, Color, X, Y)
                         SELECT %s, %s, Plugin_ID, %s, %s, %s, %s, %s, %s, %s, %s
                           FROM Plugins
@@ -77,24 +77,24 @@ class PostgresDatabase():
 
 
   def add_edge(self, snapshot_id, source, target, label):
-    self.cur.execute("""INSERT INTO Edges(Snapshot_ID, Source_ID, Target_ID, label
+    self.cur.execute("""INSERT INTO Edges(Snapshot_ID, Source_ID, Target_ID, label)
                         VALUES(%s, %s, %s, %s);""",
                         (snapshot_id, source, target, label))
     self.db.commit()
 
 
-  def add_node_info(self, node_id, plugin, info):
-    self.cur.execute("""INSERT INTO Node_Plugin_Info(Node_UUID, Plugin_ID, Info)
-                        SELECT %s, Plugin_ID, %s
+  def add_node_info(self, snapshot_id, node_id, plugin, info):
+    self.cur.execute("""INSERT INTO Node_Plugin_Info(Snapshot_ID, Node_UUID, Plugin_ID, Info)
+                        SELECT %s, %s, Plugin_ID, %s
                           FROM Plugins
                           WHERE Name = %s;""",
-                        (node_id, info, plugin))
+                        (snapshot_id, node_id, info, plugin))
     self.db.commit()
 
 
   def get_plugins(self, plugin=None):
     statement = "SELECT * FROM Plugins"
-    if plugin: statement += " WHERE Name = %s"
+    if plugin is not None: statement += " WHERE Name = %s"
     self.cur.execute(statement, (plugin,))
     return self.cur.fetchall()
 
@@ -152,9 +152,32 @@ class PostgresDatabase():
 
   def get_intel_types(self, intel_id = None):
     statement = "SELECT * FROM Intel_Types"
-    if intel_id: statement += " WHERE Intel_ID = %s"
+    if intel_id is not None: statement += " WHERE Intel_ID = %s"
     self.cur.execute(statement, (intel_id,))
     return self.cur.fetchall()
+
+
+  def get_access_rights_for_case(self, case_number):
+    self.cur.execute("""SELECT * FROM Case_Access WHERE Case_ID = %s;""", (case_number,))
+    return self.cur.fetchall()
+
+
+  def add_access_right_to_case(self, case_id, team_name):
+    self.cur.execute("""INSERT INTO Case_Access(Case_ID, Team_ID)
+                        SELECT %s, Team_ID
+                          FROM Teams
+                          WHERE Name = %s;""", (case_id, team_name))
+    self.db.commit()
+
+
+  def remove_access_right_from_case(self, case_id, team_name):
+    self.cur.execute("""DELETE FROM Case_Access
+                        WHERE Case_ID = %s
+                        AND Team_ID IN (
+                          SELECT Team_ID
+                          FROM Teams
+                          WHERE Name = %s );""", (case_id, team_name))
+    self.db.commit()
 
 
 # Backup database
@@ -208,7 +231,7 @@ class SQLITEDatabase():
 
   def add_node(self, snapshot_id, uid, plugin, intel_id, name, label,
                      recurse_depth, size, color, x, y):
-    self.cur.execute("""INSERT INTO Nodes(Snapshot_ID, UUID, Plugin, Type_ID,
+    self.cur.execute("""INSERT INTO Nodes(Snapshot_ID, UUID, Plugin_ID, Type_ID,
                           Name, Label, Recurse_Depth, Size, Color, X, Y)
                         SELECT ?, ?, Plugin_ID, ?, ?, ?, ?, ?, ?, ?, ?
                           FROM Plugins
@@ -233,7 +256,7 @@ class SQLITEDatabase():
 
 
   def get_plugins(self, plugin=None):
-    where = ("Name = ?", plugin) if plugin else None
+    where = ("Name = ?", plugin) if plugin is not None else None
     return self._selectAllFrom("Plugins", where)
 
 
@@ -276,14 +299,36 @@ class SQLITEDatabase():
 
 
   def get_intel_types(self, intel_id = None):
-    where = ("Intel_ID = ?", intel_id) if intel_id else None
+    where = ("Intel_ID = ?", intel_id) if intel_id is not None else None
     return self._selectAllFrom("Intel_Types", where)
+
+
+  def get_access_rights_for_case(self, case_number):
+    return self._selectAllFrom("Case_Access", ("Case_ID = ?", case_number))
+
+
+  def add_access_right_to_case(self, case_id, team_name):
+    self.cur.execute("""INSERT INTO Case_Access(Case_ID, Team_ID)
+                        SELECT ?, Team_ID
+                          FROM Teams
+                          WHERE Name = ?;""", (case_id, team_name))
+    self.db.commit()
+
+
+  def remove_access_right_from_case(self, case_id, team_name):
+    self.cur.execute("""DELETE FROM Case_Access
+                        WHERE Case_ID = ?
+                        AND Team_ID IN (
+                          SELECT Team_ID
+                          FROM Teams
+                          WHERE Name = ? );""", (case_id, team_name))
+    self.db.commit()
 
 
   def _selectAllFrom(self, table, where=None, limit=None):
     vals = ()
     wh   = ""
-    lim  = " LIMIT %s"%limit if limit else ""
+    lim  = " LIMIT %s"%limit if limit is not None else ""
     if where:
       if type(where) not in [tuple, list] or len(where) is not 2:
         raise(Exception)
