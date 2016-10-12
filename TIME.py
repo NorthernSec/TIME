@@ -13,6 +13,7 @@ import os
 import random
 import traceback
 
+from datetime    import datetime
 from flask       import Flask, render_template, request, jsonify, session, abort
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
 from functools   import wraps
@@ -43,6 +44,8 @@ case_manager = CaseManager()
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+locked_cases={}
+nonce_time = 5
 
 # Decorators
 @login_manager.user_loader
@@ -71,6 +74,21 @@ def verifyCaseSyntax(case_type, JSON=True):
                          payload={'caseType': case_type}))
 
 
+def renderCaseData(case):
+  data = Visualizer._prepare(case)
+  data['case'].nodes=[TK.to_dict(x) for x in data['case'].nodes]
+  data['case'].edges=[TK.to_dict(x) for x in data['case'].edges]
+  return data
+
+
+def caseAlreadyLocked(case):
+  if case in locked_cases:
+    if locked_cases[case]['user'] is not current_user.id:
+      if (datetime.now() - locked_cases[case]['time']).seconds < nonce_time:
+        return True
+  return False
+
+
 # routes
 @app.route('/')
 @login_check
@@ -96,10 +114,13 @@ def _cases():
 def case(i):
   case = db.get_case(i)
   if not case: raise InvalidCase('No case with this number exists')
+  locked = caseAlreadyLocked(i)
+  if not locked: locked_cases[i] = {'user': current_user.id, 'time': datetime.now()}
   if i not in [x.case_number for x in db.get_cases_accessible_by_user(current_user.id)]:
     abort(403)
-  data = Visualizer._prepare(case)
-  return render_template("case.html", **data)
+  data = renderCaseData(case)
+  session['current_case'] = TK.to_dict(case)
+  return render_template("case.html", locked=locked, nonce=nonce_time, **data)
 
 
 @app.route('/new_case', methods=['GET'])
@@ -107,7 +128,7 @@ def case(i):
 def new_case():
   if not session.get('new_case', None):
     session['new_case'] = TK.to_dict(Case(title="New Case"))
-  data = Visualizer._prepare(Case.from_dict(session['new_case']))
+  data = renderCaseData(Case.from_dict(session['new_case']))
   return render_template("case.html", is_new_case=True, **data)
 
 
@@ -136,39 +157,72 @@ def _case_add_intel(case_type):
     return jsonify({'status': 'new_case_intel_add_error'})
 
 
-@app.route('/set_node_positions/<case_type>', methods=['GET'])
+@app.route('/_set_node_positions/<case_type>', methods=['GET'])
 @login_check
 def _case_set_node_positions(case_type):
   verifyCaseSyntax(case_type)
   try:
     nodes = json.loads(request.args.get('nodes', type=str))
     nodes = {x['uid']: {'x': x['x'], 'y': x['y']} for x in nodes}
-    for node in session[case_type]['nodes']:
+    case = session[case_type]
+    for node in case['nodes']:
       node['x']=nodes.get(node['uid'], {}).get('x', 0)
       node['y']=nodes.get(node['uid'], {}).get('y', 0)
+    session[case_type]=case
     return jsonify({'status': 'success'})
   except Exception as e:
+    print(e)
     return jsonify({'status': 'error'})
 
 
-@app.route('/cancel/<case_type>', methods=['GET'])
+@app.route('/_lock_nonce', methods=['GET'])
+@login_check
+def lock_nonce():
+  try:
+    case = int(request.args.get('case_number', type=int))
+    if caseAlreadyLocked(case): return jsonify({'status': 'already_locked'})
+    locked_cases[case] = {'user': current_user.id, 'time': datetime.now()}
+    return jsonify({'status': 'success'})
+  except Exception as e:
+    traceback.format_exc()
+    print(e)
+
+
+@app.route('/_cancel/<case_type>', methods=['GET'])
 @login_check
 def _case_cancel(case_type):
+  if case_type == "current_case":
+    if locked_cases[session[case_type]['current_case']]['user'] == current_user.id:
+      del locked_cases[session[case_type].current_case]
   session[case_type] = None
   return jsonify({'status': 'success'})
 
 
-@app.route('/save/<case_type>', methods=['GET'])
+@app.route('/_save/<case_type>', methods=['GET'])
 @login_check
 def _case_save(case_type):
   verifyCaseSyntax(case_type)
+  _case_set_node_positions(case_type)
+  case = Case.from_dict(session[case_type])
+  if case_type == 'current_case':
+    if caseAlreadyLocked(case.case_number):
+      jsonify({'status': 'case_locked'})
   try:
+    case.title       = request.args.get('title', type=str)
+    case.description = request.args.get('descr', type=str)
+    case.notes       = request.args.get('notes', type=str)
+    rights           = json.loads(request.args.get('rights'))
+    if not case.title:   return jsonify({'status': 'no_title_exception'})
+    if len(rights) == 0: return jsonify({'status': 'no_access_exception'})
+  
     if case_type == 'new_case':
-      case = db.add_case(Case.from_dict(session['new_case']))
+      case = db.add_case(case)
       session['new_case'] = None
-      return jsonify({'status': 'success', 'case': case.case_number})
     else:
-      return jsonify({'status': 'success'})
+      db.update_case(case)
+    db.set_access(case, rights)
+    return jsonify({'status': 'success', 'case': case.case_number})
+
   except Exception as e:
     print(e)
     print(traceback.format_exc())
@@ -197,14 +251,18 @@ def test():
   print(dir(app))
   return jsonify(session)
 
+
 # Error handling
 @app.errorhandler(InvalidCase)
 def invalid_case_error(error):
   return render_error(error)
 
-
 @app.errorhandler(InvalidSyntax)
 def invalid_syntax_error(error):
+  return render_error(error)
+
+@app.errorhandler(CaseNotLoaded)
+def case_not_loaded_error(error):
   return render_error(error)
 
 
@@ -214,6 +272,7 @@ def render_error(error):
     response.status_code = error.status_code
   else:
     response = render_template('error.html', error=error)
+  print("%s - %s"%(type(error), error.message))
   return response
 
 
