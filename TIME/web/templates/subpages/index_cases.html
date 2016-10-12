@@ -1,6 +1,6 @@
 {% for case in Cases %}
   <div class="well">
-    <h3>Case #{{case.case_number}} - {{case.title}}</h3>
+    <a href="case/{{case.case_number}}"><h3>Case #{{case.case_number}} - {{case.title}}</h3></a>
     <p>{% if case.description %}{{case.description}}{% else %}No description{% endif %}</p>
   </div>
 {% endfor %}

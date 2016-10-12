@@ -76,3 +76,22 @@ body{
   background: #D0D0D0;
   padding: 10px;
 }
+
+.h3input{
+  font-weight:500;
+  font-size:24px;
+  margin-left: -10px;
+  width: 170px;
+}
+
+.stronginput{
+  font-weight: bold;
+  margin-left: -10px;
+  width: 170px;
+}
+
+.pinput{
+  margin-left: -10px;
+  width: 170px;
+  resize: vertical;
+}

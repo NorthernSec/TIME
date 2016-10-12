@@ -1,7 +1,7 @@
-{% if is_new_case is defined %}
-  {% set case_link = '_new_case' %}
+{% if case.case_number is none %}
+  {% set case_link = 'new_case' %}
 {% else %}
-  {% set case_link = '_case' %}
+  {% set case_link = 'current_case' %}
 {% endif %}
 
 {% extends 'layouts/master-page' %}
@@ -34,10 +34,10 @@
           .selector('.faded')
           .css({'opacity':      0.25,
                 'text-opacity': 0}),
-        ready: function() { window.cy = this; setEvents();},
+        ready: function() { window.cy = this; setEvents();
+                            None = null;
+                            addIntel({{ case.nodes|safe }}, {{ case.edges|safe }}); },
         layout: {name: 'preset'},
-        elements:{nodes: [{% for n in case.nodes %}{data: {id: "{{n.uid}}", plugin: "{{n.plugin}}", name: `{{n.name}}`, size: {{n.size}}, color: "{{n.color}}", label: `{{n.label}}`, info: `{{n.info|safe}}`}, position: {x: {{n.x}}, y: {{n.y}}}},{% endfor %}],
-                  edges: [{% for e in case.edges %}{data: {source: "{{e.source}}", target: "{{e.target}}", label: "{{e.label}}"}, classes: "autorotate"},{% endfor %}]},
       });
 
       function setEvents(){
@@ -73,11 +73,12 @@
         data = {intel: $('#intel').val(), type: $('#intel_type').val()}
         $("body").css("cursor", "progress");
         $("#case-status").text("gathering new intel...")
-        $.getJSON("{{case_link}}/add_intel", data, function( data ) {
-          addIntel(data['nodes'], data['edges'])
-          prepareLegend(data['labels'], data['plugins'], data['intel'])
+        $.getJSON("/_add_intel/{{case_link}}", data, function( data ) {
+          addIntel(data['nodes'], data['edges']);
+          saveNodePositions();
+          prepareLegend(data['labels'], data['plugins'], data['intel']);
           $("body").css("cursor", "default");
-          $("#case-status").text("ready")
+          $("#case-status").text("ready");
         });
       });
       $("#back").on('click', function(){location.href = "/"});
@@ -99,24 +100,84 @@
       function addIntel(nodes, edges){
         items = []
         $.each(nodes, function( i, node ){ node.id = node.uid; delete node.uid;
-                                           pos = {x: Math.floor(Math.random() * cy.width()),
-                                                  y: Math.floor(Math.random() * cy.height())}
+                                          if(node.x && node.y){
+                                            pos = {x: node.x, y: node.y}
+                                          }else{
+                                            pos = {x: Math.floor(Math.random() * cy.width()),
+                                                   y: Math.floor(Math.random() * cy.height())}
+                                          }
                                            items.push({group: 'nodes', data: node, position: pos }) });
         $.each(edges, function( i, edge ){ items.push({group: 'edges', data: edge}) });
         cy.add(items);
-        nodes = []
-        cy.nodes().forEach(function( n ){nodes.push({uid: n.data("id"), x: n.position("x"),
-                                                                         y: n.position("y")})})
-        $.getJSON("{{case_link}}/set_node_positions", {nodes: JSON.stringify(nodes)}, function( data ) {})
       }
 
-      $("#cancel_case").on('click', function(){ $.getJSON("{{case_link}}/cancel", {}, function(data){}) })
+      function getNodePositions(){
+        nodes = []
+        cy.nodes().forEach(function( n ){nodes.push({uid: n.data("id"), x: n.renderedPosition("x"),
+                                                                        y: n.renderedPosition("y")})})
+        return nodes
+      }
 
-      {% if is_new_case is not defined %}
+      function saveNodePositions(){
+        $.getJSON("/_set_node_positions/{{case_link}}", {nodes: JSON.stringify(getNodePositions())}, function( data ) {})
+      }
+
+      $("#cancel_case").on('click', function(){
+        $.getJSON("/_cancel/{{case_link}}", {}, function(data){ if(parseStatus(data)){window.location = "/";} }) });
+
       $("#save_case").on('click', function(){
+        $("#case-status").text("saving...")
+        data = {title:  $("#title").val(),
+                descr:  $("#descr").val(),
+                notes:  $("#notes").val(),
+                rights: [],
+                nodes:  JSON.stringify(getNodePositions())}
+        $("[id^=access_").each(function(i){
+          if($(this).prop('checked')) { data['rights'].push($(this).attr("id").split("_")[1]) }
+        });
+        data['rights'] = JSON.stringify(data['rights'])
 
+        if(data['rights'].length == 0){ alert("Please make sure at least one team has access to this case"); return; }
+        if( ! data['title'].trim()){ alert("Please give the case a title"); return; }
+
+        $.getJSON("/_save/{{case_link}}", data, function(data){
+          if(parseStatus(data)){
+            {% if is_new_case is defined %}
+              window.location = "/case/"+data["case"];
+            {% endif %}
+            }else{ alert("An error occured!"); }
+          $("#case-status").text("ready")
+        })
       })
 
+      {% if is_new_case is not defined %}
+
+      $.when().then(function( x ) {
+        function nonce(){
+          $.ajax({url:  "/_lock_nonce", 
+                  data: {'case_number': {{case.case_number}}},
+                  cache: false,
+                  type: "GET",
+                  timeout:{{nonce}}*1000,
+                  success: function(response) {
+                    if (response['status'] != undefined){
+                      switch(response['status']){
+                        case "success": setTimeout(nonce, {{nonce}}*1000); break;
+                        case "already_locked": $("#case-status").text("case already locked"); break;
+                        default:
+                          $("#case-status").text("unknown case issue");
+                          $("#save_case").prop('disabled', true);
+                      }
+                    }else{
+                      $("#case-status").text("unknown case issue");
+                      $("#save_case").prop('disabled', true); } },
+                  error: function(xhr) {
+                    $("#case-status").text("server unreachable");
+                    $("#save_case").prop('disabled', true);
+                  } });
+        }
+        nonce();
+      });
       {% endif %}
     }); // on dom ready
   </script>
@@ -132,9 +193,9 @@
           <h3 class="panel-title">Case</h3>
         </div>
         <div class="panel-body">
-          <h3>{{case.title}}</h3>
-          <strong>{{case.description}}</strong>
-          <p>{{case.notes}}</p>
+          <input    id="title" type="text" class="h3input" value="{{case.title}}" />
+          <input    id="descr" type="text" class="stronginput" value="{{case.description}}" />
+          <textarea id="notes" class="pinput"> {{case.notes}} </textarea>
         </div>
       </div>
       <!-- End Case -->
@@ -176,6 +237,18 @@
         </div>
       </div>
       <!-- End Legend -->
+      <!-- Access -->
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Access</h3>
+        </div>
+        <div class="panel-body">
+          <ul class="legend" id="access">
+            {% for t in teams %}<li><input id="access_{{t['name']}}" {% if t['allowed'] %} checked {% endif %} type="checkbox"> </input>{{t['name']}}</li>{% endfor %}
+          </ul>
+        </div>
+      </div>
+      <!-- End Access -->
       <button id="save_case">Save</button>
       <button id="cancel_case">Cancel</button>
     </div>
